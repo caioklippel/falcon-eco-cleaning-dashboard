@@ -171,13 +171,16 @@
         /* ── CONSIDERAÇÕES ── */
         .consideracoes-view { display: none; }
         .consideracoes-view.visible { display: block; }
-        .consideracoes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+        .cons-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+        .consideracoes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
         .consideracoes-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
         .consideracoes-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); }
         .consideracoes-textarea { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: inherit; font-size: 14px; line-height: 1.6; padding: 14px; resize: vertical; min-height: 220px; outline: none; transition: border-color 0.15s; width: 100%; }
         .consideracoes-textarea:focus { border-color: var(--green); }
         .consideracoes-textarea::placeholder { color: var(--text-muted); }
-        .consideracoes-save { padding: 8px 20px; background: var(--green); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: opacity 0.15s; align-self: flex-end; }
+        .cons-text-display { background: var(--surface2); border-radius: 8px; padding: 14px; font-size: 14px; line-height: 1.6; color: var(--text); min-height: 100px; white-space: pre-wrap; word-break: break-word; }
+        .cons-save-wrap { display: flex; justify-content: flex-end; margin-bottom: 24px; }
+        .consideracoes-save { padding: 9px 24px; background: var(--green); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: opacity 0.15s; }
         .consideracoes-save:hover { opacity: 0.85; }
         .period-sep { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
         @media (max-width: 768px) { .consideracoes-grid { grid-template-columns: 1fr; } }
@@ -196,11 +199,6 @@
         .td-name { color: var(--text); font-weight: 500; max-width: 240px; overflow: hidden; text-overflow: ellipsis; }
         .td-adset { color: var(--text-secondary); font-size: 12px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
         .td-spend { color: var(--green-light); font-weight: 600; }
-        .expand-btn { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; font-size: 9px; color: var(--text-muted); margin-right: 8px; transition: transform 0.2s; cursor: pointer; }
-        .expand-btn.open { transform: rotate(90deg); color: var(--green-light); }
-        .adset-row { display: none; background: rgba(0,0,0,0.25); }
-        .adset-row.visible { display: table-row; }
-        .adset-row td:first-child { padding-left: 42px; }
         .no-data { text-align: center; padding: 40px; color: var(--text-muted); font-size: 13px; }
 
         /* ── FOOTER ── */
@@ -338,14 +336,14 @@
         <!-- Tabela -->
         <div class="table-section">
             <div class="table-header">
-                <div class="table-title">Campanhas e Conjuntos de Anúncios</div>
+                <div class="table-title">Métricas por Campanha</div>
                 <div class="table-count" id="campaign-count">—</div>
             </div>
             <div style="overflow-x: auto;">
                 <table>
                     <thead>
                         <tr>
-                            <th>Campanha / Conjunto</th>
+                            <th>Campanha</th>
                             <th>Investimento</th>
                             <th>Alcance</th>
                             <th>Impressões</th>
@@ -367,18 +365,41 @@
 
     <!-- Considerações do Time -->
     <div class="consideracoes-view" id="consideracoes-view">
-        <div class="consideracoes-grid">
+
+        <!-- Header: última atualização + botão atualizar (só aparece quando há notas salvas) -->
+        <div class="cons-header" id="cons-header" style="display:none">
+            <div class="last-update-small" id="cons-updated"></div>
+            <button class="update-csv-btn" onclick="startEditConsideracoes()">↑ Atualizar Considerações</button>
+        </div>
+
+        <!-- Modo exibição (notas salvas) -->
+        <div class="consideracoes-grid" id="cons-display" style="display:none">
             <div class="consideracoes-card">
                 <div class="consideracoes-label">Considerações do time</div>
-                <textarea class="consideracoes-textarea" id="cons-texto" placeholder="Descreva as observações sobre as métricas deste período — o que está funcionando, o que precisa de atenção, pontos de destaque..."></textarea>
-                <button class="consideracoes-save" onclick="saveConsideracoes()">Salvar</button>
+                <div class="cons-text-display" id="cons-texto-display"></div>
             </div>
             <div class="consideracoes-card">
                 <div class="consideracoes-label">Próximos passos</div>
-                <textarea class="consideracoes-textarea" id="cons-proximos" placeholder="Liste as ações planejadas para o próximo período — ajustes de campanha, novos criativos, mudanças de estratégia..."></textarea>
-                <button class="consideracoes-save" onclick="saveConsideracoes()">Salvar</button>
+                <div class="cons-text-display" id="cons-proximos-display"></div>
             </div>
         </div>
+
+        <!-- Modo edição (textareas) -->
+        <div class="consideracoes-grid" id="cons-edit" style="display:none">
+            <div class="consideracoes-card">
+                <div class="consideracoes-label">Considerações do time</div>
+                <textarea class="consideracoes-textarea" id="cons-texto" placeholder="Descreva as observações sobre as métricas — o que está funcionando, o que precisa de atenção, pontos de destaque..."></textarea>
+            </div>
+            <div class="consideracoes-card">
+                <div class="consideracoes-label">Próximos passos</div>
+                <textarea class="consideracoes-textarea" id="cons-proximos" placeholder="Liste as ações planejadas — ajustes de campanha, novos criativos, mudanças de estratégia..."></textarea>
+            </div>
+        </div>
+
+        <div class="cons-save-wrap" id="cons-save-wrap" style="display:none">
+            <button class="consideracoes-save" onclick="saveConsideracoes()">Salvar</button>
+        </div>
+
     </div>
 
 </div>
@@ -754,78 +775,87 @@ function renderTable(data) {
         tbody.innerHTML = '<tr><td colspan="10" class="no-data">Sem dados de campanha para este período</td></tr>';
         return;
     }
-    tbody.innerHTML = camps.map((c,i) => {
-        const hasAdsets = c.adsets.length > 0;
-        const exp = hasAdsets
-            ? `<span class="expand-btn" id="exp-${i}">▶</span>`
-            : `<span class="expand-btn" style="opacity:0">▶</span>`;
-        return `
-            <tr onclick="${hasAdsets?`toggleAdsets(${i})`:''}" style="cursor:${hasAdsets?'pointer':'default'}">
-                <td><span class="td-name">${exp}${esc(c.name)}</span></td>
-                <td class="td-spend">${fmt(c.spend,'currency')}</td>
-                <td>${fmt(c.reach,'num')}</td>
-                <td>${fmt(c.impressions,'num')}</td>
-                <td>${fmt(c.clicks,'num')}</td>
-                <td>${fmt(c.ctr,'pct')}</td>
-                <td>${fmt(c.cpm,'currency')}</td>
-                <td>${fmt(c.cpc,'currency')}</td>
-                <td>${fmt(c.results,'num')}</td>
-                <td>${fmt(c.cpr,'currency')}</td>
-            </tr>
-            ${c.adsets.map(a => `
-            <tr class="adset-row" data-camp="${i}">
-                <td><span class="td-adset">↳ ${esc(a.name)}</span></td>
-                <td class="td-spend">${fmt(a.spend,'currency')}</td>
-                <td>${fmt(a.reach,'num')}</td>
-                <td>${fmt(a.impressions,'num')}</td>
-                <td>${fmt(a.clicks,'num')}</td>
-                <td>${fmt(a.ctr,'pct')}</td>
-                <td>${fmt(a.cpm,'currency')}</td>
-                <td>${fmt(a.cpc,'currency')}</td>
-                <td>${fmt(a.results,'num')}</td>
-                <td>${fmt(a.cpr,'currency')}</td>
-            </tr>`).join('')}`;
-    }).join('');
+    tbody.innerHTML = camps.map(c => `
+        <tr>
+            <td><span class="td-name">${esc(c.name)}</span></td>
+            <td class="td-spend">${fmt(c.spend,'currency')}</td>
+            <td>${fmt(c.reach,'num')}</td>
+            <td>${fmt(c.impressions,'num')}</td>
+            <td>${fmt(c.clicks,'num')}</td>
+            <td>${fmt(c.ctr,'pct')}</td>
+            <td>${fmt(c.cpm,'currency')}</td>
+            <td>${fmt(c.cpc,'currency')}</td>
+            <td>${fmt(c.results,'num')}</td>
+            <td>${fmt(c.cpr,'currency')}</td>
+        </tr>`).join('');
 }
 
-function toggleAdsets(i) {
-    const btn = document.getElementById(`exp-${i}`);
-    if (!btn) return;
-    const open = btn.classList.toggle('open');
-    document.querySelectorAll(`[data-camp="${i}"]`).forEach(r => r.classList.toggle('visible', open));
-}
 
 // ═══════════════════════════════════════
 //  CONSIDERAÇÕES
 // ═══════════════════════════════════════
 const NOTES_KEY = 'falcon_eco_notes_v1';
 
-function notesGet() {
-    try { return JSON.parse(localStorage.getItem(NOTES_KEY) || '{}'); }
-    catch { return {}; }
+function notesLoad() {
+    try { return JSON.parse(localStorage.getItem(NOTES_KEY) || 'null'); }
+    catch { return null; }
 }
 
-function loadConsideracoes() {
-    const notes = notesGet()[selectedDays] || {};
-    document.getElementById('cons-texto').value   = notes.texto   || '';
-    document.getElementById('cons-proximos').value = notes.proximos || '';
+function notesSave(texto, proximos) {
+    const notes = {
+        texto, proximos,
+        updated: new Date().toLocaleString('pt-BR', {
+            day: '2-digit', month: 'short',
+            hour: '2-digit', minute: '2-digit'
+        })
+    };
+    localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+    return notes;
+}
+
+function renderConsideracoes() {
+    const notes = notesLoad();
+    const hasnotes = notes && (notes.texto || notes.proximos);
+
+    document.getElementById('cons-header').style.display   = hasnotes ? 'flex' : 'none';
+    document.getElementById('cons-display').style.display  = hasnotes ? 'grid' : 'none';
+    document.getElementById('cons-edit').style.display     = hasnotes ? 'none' : 'grid';
+    document.getElementById('cons-save-wrap').style.display = hasnotes ? 'none' : 'flex';
+
+    if (hasnotes) {
+        document.getElementById('cons-updated').textContent        = 'Atualizado em ' + notes.updated;
+        document.getElementById('cons-texto-display').textContent  = notes.texto || '';
+        document.getElementById('cons-proximos-display').textContent = notes.proximos || '';
+    } else {
+        document.getElementById('cons-texto').value    = '';
+        document.getElementById('cons-proximos').value = '';
+    }
+}
+
+function startEditConsideracoes() {
+    const notes = notesLoad();
+    document.getElementById('cons-texto').value    = notes?.texto    || '';
+    document.getElementById('cons-proximos').value = notes?.proximos || '';
+    document.getElementById('cons-display').style.display   = 'none';
+    document.getElementById('cons-header').style.display    = 'none';
+    document.getElementById('cons-edit').style.display      = 'grid';
+    document.getElementById('cons-save-wrap').style.display = 'flex';
 }
 
 function saveConsideracoes() {
-    const notes = notesGet();
-    notes[selectedDays] = {
-        texto:    document.getElementById('cons-texto').value,
-        proximos: document.getElementById('cons-proximos').value,
-    };
-    localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+    notesSave(
+        document.getElementById('cons-texto').value,
+        document.getElementById('cons-proximos').value
+    );
+    renderConsideracoes();
     showToast('✓ Considerações salvas');
 }
 
 function showConsideracoes() {
-    document.getElementById('upload-wrap').style.display    = 'none';
+    document.getElementById('upload-wrap').style.display = 'none';
     document.getElementById('dashboard').classList.remove('visible');
     document.getElementById('consideracoes-view').classList.add('visible');
-    loadConsideracoes();
+    renderConsideracoes();
 }
 
 function hideConsideracoes() {
