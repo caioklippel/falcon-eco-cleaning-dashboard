@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Falcon Eco Cleaning — Performance Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --surface: #141414;
+            --surface2: #1e1e1e;
+            --border: #2a2a2a;
+            --green: #16a34a;
+            --green-light: #22c55e;
+            --green-dim: rgba(22, 163, 74, 0.12);
+            --text: #f9fafb;
+            --text-muted: #6b7280;
+            --text-secondary: #9ca3af;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+            min-height: 100vh;
+        }
+
+        /* ── HEADER ── */
+        .header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header-left { display: flex; align-items: center; gap: 14px; }
+        .client-logo { height: 46px; width: auto; border-radius: 8px; background: #fff; padding: 4px; }
+        .client-name { font-size: 17px; font-weight: 700; }
+        .client-subtitle { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .header-right { text-align: right; }
+        .rise-badge { font-size: 12px; color: var(--green-light); font-weight: 600; }
+        .last-update { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+        /* ── CONTAINER ── */
+        .container { max-width: 1440px; margin: 0 auto; padding: 24px; }
+
+        /* ── PERIOD BAR ── */
+        .period-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .period-label { font-size: 12px; color: var(--text-muted); margin-right: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .period-btn {
+            padding: 7px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-secondary);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .period-btn:hover { border-color: var(--green); color: var(--text); }
+        .period-btn.active {
+            background: var(--green-dim);
+            border-color: var(--green);
+            color: var(--green-light);
+            font-weight: 600;
+        }
+        .period-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--green-light);
+            display: none;
+        }
+        .period-btn.has-data .period-dot { display: block; }
+
+        /* ── UPLOAD ── */
+        .upload-wrap { margin-bottom: 24px; }
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            padding: 56px 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--surface);
+        }
+        .upload-area:hover, .upload-area.dragover {
+            border-color: var(--green);
+            background: var(--green-dim);
+        }
+        .upload-icon { font-size: 48px; margin-bottom: 16px; }
+        .upload-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+        .upload-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px; }
+        .upload-desc strong { color: var(--text-secondary); }
+        .upload-btn {
+            padding: 11px 28px;
+            background: var(--green);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+            font-family: inherit;
+        }
+        .upload-btn:hover { background: var(--green-light); }
+        .upload-hint { font-size: 12px; color: var(--text-muted); margin-top: 14px; }
+
+        /* ── DASHBOARD ── */
+        .dashboard { display: none; }
+        .dashboard.visible { display: block; }
+
+        /* ── DATA HEADER ── */
+        .data-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .data-info { font-size: 13px; color: var(--text-muted); }
+        .data-info span { color: var(--green-light); font-weight: 600; }
+        .update-csv-btn {
+            padding: 8px 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .update-csv-btn:hover { border-color: var(--green); color: var(--green-light); }
+
+        /* ── METRICS ── */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .metric-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 18px;
+            transition: border-color 0.15s;
+        }
+        .metric-card:hover { border-color: var(--green); }
+        .metric-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; font-weight: 600; }
+        .metric-value { font-size: 22px; font-weight: 700; color: var(--text); line-height: 1; }
+        .metric-value.accent { color: var(--green-light); }
+        .metric-sub { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+
+        /* ── CHARTS ── */
+        .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+        .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+        .chart-title { font-size: 13px; font-weight: 600; margin-bottom: 16px; }
+        .chart-container { position: relative; height: 210px; }
+
+        /* ── TABLE ── */
+        .table-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
+        .table-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .table-title { font-size: 13px; font-weight: 700; }
+        .table-count { font-size: 12px; color: var(--text-muted); }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        thead th { padding: 9px 16px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); background: var(--surface2); border-bottom: 1px solid var(--border); white-space: nowrap; }
+        tbody tr { border-bottom: 1px solid var(--border); transition: background 0.12s; }
+        tbody tr:hover { background: var(--surface2); }
+        tbody tr:last-child { border-bottom: none; }
+        tbody td { padding: 11px 16px; color: var(--text-secondary); white-space: nowrap; }
+        .td-name { color: var(--text); font-weight: 500; max-width: 240px; overflow: hidden; text-overflow: ellipsis; }
+        .td-adset { color: var(--text-secondary); font-size: 12px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+        .td-spend { color: var(--green-light); font-weight: 600; }
+        .expand-btn { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; font-size: 9px; color: var(--text-muted); margin-right: 8px; transition: transform 0.2s; cursor: pointer; }
+        .expand-btn.open { transform: rotate(90deg); color: var(--green-light); }
+        .adset-row { display: none; background: rgba(0,0,0,0.25); }
+        .adset-row.visible { display: table-row; }
+        .adset-row td:first-child { padding-left: 42px; }
+        .no-data { text-align: center; padding: 40px; color: var(--text-muted); font-size: 13px; }
+
+        /* ── FOOTER ── */
+        .footer { text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border); }
+        .footer a { color: var(--green-light); text-decoration: none; font-weight: 600; }
+
+        /* ── TOAST ── */
+        .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface2); border: 1px solid var(--green); color: var(--text); padding: 12px 20px; border-radius: 10px; font-size: 13px; z-index: 9999; opacity: 0; transform: translateY(8px); transition: all 0.25s; pointer-events: none; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 1100px) { .metrics-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 768px) { .container { padding: 16px; } .metrics-grid { grid-template-columns: repeat(2, 1fr); } .charts-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <div class="header-left">
+        <img src="logo.png" alt="Falcon Eco Cleaning" class="client-logo">
+        <div>
+            <div class="client-name">Falcon Eco Cleaning</div>
+            <div class="client-subtitle">Paid Ads Performance Dashboard</div>
+        </div>
+    </div>
+    <div class="header-right">
+        <div class="rise-badge">Rise Company Global</div>
+        <div class="last-update" id="last-update">No data loaded</div>
+    </div>
+</header>
+
+<div class="container">
+
+    <!-- Period Filter -->
+    <div class="period-bar">
+        <span class="period-label">Period:</span>
+        <button class="period-btn active" data-days="0"><span class="period-dot"></span>Today (UK)</button>
+        <button class="period-btn" data-days="3"><span class="period-dot"></span>Last 3 days</button>
+        <button class="period-btn" data-days="7"><span class="period-dot"></span>Last 7 days</button>
+        <button class="period-btn" data-days="15"><span class="period-dot"></span>Last 15 days</button>
+        <button class="period-btn" data-days="30"><span class="period-dot"></span>Last 30 days</button>
+    </div>
+
+    <!-- Upload -->
+    <div class="upload-wrap" id="upload-wrap">
+        <div class="upload-area" id="upload-area">
+            <div class="upload-icon">📊</div>
+            <div class="upload-title" id="upload-title">Upload CSV — Today (UK)</div>
+            <div class="upload-desc">
+                Export from Meta Ads Manager for this period and upload here.<br>
+                <strong>Ads Manager → Reports → Export → CSV</strong>
+            </div>
+            <button class="upload-btn" onclick="document.getElementById('csv-input').click()">Choose CSV File</button>
+            <input type="file" id="csv-input" accept=".csv" style="display:none">
+            <div class="upload-hint">Supports drag & drop · Each period has its own CSV</div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="dashboard" id="dashboard">
+        <div class="data-header">
+            <div class="data-info">
+                Period: <span id="period-label-display">—</span>
+                &nbsp;·&nbsp; <span id="rows-count">0</span> rows
+                &nbsp;·&nbsp; <span id="date-range-display">—</span>
+            </div>
+            <button class="update-csv-btn" id="update-csv-btn">
+                ↑ Update CSV
+            </button>
+        </div>
+
+        <!-- Metrics Row 1 -->
+        <div class="metrics-grid" style="margin-bottom:12px;">
+            <div class="metric-card">
+                <div class="metric-label">Total Spend</div>
+                <div class="metric-value accent" id="m-spend">—</div>
+                <div class="metric-sub">Ad investment</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Results</div>
+                <div class="metric-value accent" id="m-results">—</div>
+                <div class="metric-sub" id="m-result-type">Leads / Messages</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Cost per Result</div>
+                <div class="metric-value" id="m-cpr">—</div>
+                <div class="metric-sub">CPL / CPA</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Reach</div>
+                <div class="metric-value" id="m-reach">—</div>
+                <div class="metric-sub">Unique people</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Impressions</div>
+                <div class="metric-value" id="m-impressions">—</div>
+                <div class="metric-sub">Total views</div>
+            </div>
+        </div>
+
+        <!-- Metrics Row 2 -->
+        <div class="metrics-grid" style="margin-bottom:24px;">
+            <div class="metric-card">
+                <div class="metric-label">Link Clicks</div>
+                <div class="metric-value" id="m-clicks">—</div>
+                <div class="metric-sub">Website clicks</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">CTR</div>
+                <div class="metric-value" id="m-ctr">—</div>
+                <div class="metric-sub">Click-through rate</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">CPM</div>
+                <div class="metric-value" id="m-cpm">—</div>
+                <div class="metric-sub">Cost / 1K impressions</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">CPC</div>
+                <div class="metric-value" id="m-cpc">—</div>
+                <div class="metric-sub">Cost per click</div>
+            </div>
+            <div class="metric-card" id="roas-card">
+                <div class="metric-label">ROAS</div>
+                <div class="metric-value" id="m-roas">—</div>
+                <div class="metric-sub">Return on ad spend</div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="charts-grid">
+            <div class="chart-card">
+                <div class="chart-title">Daily Spend (£)</div>
+                <div class="chart-container"><canvas id="spend-chart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title">Daily Results</div>
+                <div class="chart-container"><canvas id="results-chart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-section">
+            <div class="table-header">
+                <div class="table-title">Campaigns & Ad Sets</div>
+                <div class="table-count" id="campaign-count">—</div>
+            </div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Campaign / Ad Set</th>
+                            <th>Spend</th>
+                            <th>Reach</th>
+                            <th>Impressions</th>
+                            <th>Clicks</th>
+                            <th>CTR</th>
+                            <th>CPM</th>
+                            <th>CPC</th>
+                            <th>Results</th>
+                            <th>Cost / Result</th>
+                        </tr>
+                    </thead>
+                    <tbody id="campaigns-tbody">
+                        <tr><td colspan="10" class="no-data">No data</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<footer class="footer">
+    Powered by <a href="https://www.instagram.com/risecompanyglobal" target="_blank">@risecompanyglobal</a>
+    &nbsp;·&nbsp; Rise Company Global
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════
+const CURRENCY = '£';
+const STORAGE_KEY = 'falcon_eco_v1';
+const PERIOD_LABELS = { 0: 'Today (UK)', 3: 'Last 3 days', 7: 'Last 7 days', 15: 'Last 15 days', 30: 'Last 30 days' };
+
+let selectedDays = 0;
+let spendChart = null;
+let resultsChart = null;
+
+// ── Column mappings EN + PT ──
+const COL = {
+    campaign:   ['campaign name','nome da campanha','campaign'],
+    adset:      ['ad set name','nome do conjunto de anúncios','adset name','conjunto de anúncios'],
+    date:       ['day','dia','date','reporting starts','início do relatório'],
+    spend:      ['amount spent (gbp)','amount spent (usd)','amount spent (eur)','amount spent (brl)','amount spent','valor usado (gbp)','valor usado (brl)','valor usado'],
+    reach:      ['reach','alcance'],
+    impressions:['impressions','impressões'],
+    clicks:     ['link clicks','cliques no link','outbound clicks'],
+    ctr:        ['ctr (link click-through rate)','ctr (taxa de cliques no link)','ctr'],
+    cpm:        ['cpm (cost per 1,000 impressions)','cpm (custo por 1.000 impressões)','cpm'],
+    cpc:        ['cpc (cost per link click)','cpc (custo por clique no link)','cpc'],
+    results:    ['results','resultados'],
+    cpr:        ['cost per result','custo por resultado'],
+    roas:       ['purchase roas (return on ad spend)','website purchase roas','roas'],
+    resultType: ['result type','tipo de resultado'],
+};
+
+// ═══════════════════════════════════════
+//  STORAGE
+// ═══════════════════════════════════════
+function storageGet() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+    catch { return {}; }
+}
+
+function storageSave(days, data, meta) {
+    try {
+        const store = storageGet();
+        store[days] = { data, meta };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    } catch(e) {
+        showToast('⚠ Storage full — data not saved across refreshes');
+    }
+}
+
+function storageLoad(days) {
+    const store = storageGet();
+    return store[days] || null;
+}
+
+function storageDelete(days) {
+    const store = storageGet();
+    delete store[days];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+}
+
+function hasData(days) {
+    return !!storageLoad(days);
+}
+
+// ═══════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════
+function findCol(headers, keys) {
+    const lower = headers.map(h => h.toLowerCase().trim());
+    for (const key of keys) {
+        const idx = lower.indexOf(key.toLowerCase());
+        if (idx !== -1) return headers[idx];
+    }
+    for (const key of keys) {
+        const idx = lower.findIndex(h => h.includes(key.toLowerCase()));
+        if (idx !== -1) return headers[idx];
+    }
+    return null;
+}
+
+function parseNum(val) {
+    if (val === null || val === undefined || val === '') return 0;
+    return parseFloat(String(val).replace(/[£$€,\s%]/g,'').trim()) || 0;
+}
+
+function fmt(n, type) {
+    if (isNaN(n) || n === null) return '—';
+    if (type === 'currency') {
+        if (n === 0) return '—';
+        return CURRENCY + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+    }
+    if (type === 'pct') { if (n === 0) return '—'; return n.toFixed(2) + '%'; }
+    if (type === 'num') {
+        if (n === 0) return '—';
+        if (n >= 1000000) return (n/1000000).toFixed(1)+'M';
+        if (n >= 1000) return (n/1000).toFixed(1)+'K';
+        return Math.round(n).toLocaleString('en-GB');
+    }
+    return String(n);
+}
+
+function showToast(msg, ms = 3000) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._t);
+    t._t = setTimeout(() => t.classList.remove('show'), ms);
+}
+
+function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function updatePeriodDots() {
+    document.querySelectorAll('.period-btn').forEach(btn => {
+        const d = parseInt(btn.dataset.days);
+        btn.classList.toggle('has-data', hasData(d));
+    });
+}
+
+// ═══════════════════════════════════════
+//  CSV PARSING
+// ═══════════════════════════════════════
+function handleFile(file) {
+    if (!file || !file.name.endsWith('.csv')) { showToast('Please select a .csv file'); return; }
+    Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (res) => {
+            const data = res.data.filter(row => {
+                const first = String(Object.values(row)[0]||'').toLowerCase().trim();
+                return first && !first.startsWith('total') && !first.startsWith('relatório') && !first.startsWith('report');
+            });
+            if (!data.length) { showToast('No valid rows in this CSV'); return; }
+
+            const meta = {
+                rows: data.length,
+                updated: new Date().toLocaleString('en-GB', {
+                    timeZone: 'Europe/London',
+                    day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'
+                })
+            };
+
+            storageSave(selectedDays, data, meta);
+            updatePeriodDots();
+            showDashboard(data, meta);
+            showToast('✓ ' + data.length + ' rows loaded for ' + PERIOD_LABELS[selectedDays]);
+        },
+        error: () => showToast('Error reading file')
+    });
+}
+
+// ═══════════════════════════════════════
+//  SHOW / HIDE
+// ═══════════════════════════════════════
+function showDashboard(data, meta) {
+    document.getElementById('upload-wrap').style.display = 'none';
+    document.getElementById('dashboard').classList.add('visible');
+    document.getElementById('rows-count').textContent = meta.rows;
+    document.getElementById('last-update').textContent = 'Updated ' + meta.updated;
+    document.getElementById('period-label-display').textContent = PERIOD_LABELS[selectedDays];
+    renderMetrics(data);
+    renderCharts(data);
+    renderTable(data);
+}
+
+function showUpload() {
+    document.getElementById('upload-wrap').style.display = 'block';
+    document.getElementById('dashboard').classList.remove('visible');
+    document.getElementById('upload-title').textContent = 'Upload CSV — ' + PERIOD_LABELS[selectedDays];
+    document.getElementById('last-update').textContent = 'No data for this period';
+    document.getElementById('csv-input').value = '';
+}
+
+function switchPeriod(days) {
+    selectedDays = days;
+    document.getElementById('upload-title').textContent = 'Upload CSV — ' + PERIOD_LABELS[days];
+
+    const saved = storageLoad(days);
+    if (saved) {
+        showDashboard(saved.data, saved.meta);
+    } else {
+        showUpload();
+    }
+}
+
+// ═══════════════════════════════════════
+//  DATA PROCESSING
+// ═══════════════════════════════════════
+function aggregate(data) {
+    if (!data.length) return null;
+    const h = Object.keys(data[0]);
+    const c = {};
+    for (const [k,v] of Object.entries(COL)) c[k] = findCol(h,v);
+
+    let spend=0,reach=0,imp=0,clicks=0,results=0,roas=0,roasN=0;
+    const types = new Set();
+    data.forEach(r => {
+        spend   += parseNum(r[c.spend]);
+        reach   += parseNum(r[c.reach]);
+        imp     += parseNum(r[c.impressions]);
+        clicks  += parseNum(r[c.clicks]);
+        results += parseNum(r[c.results]);
+        if (c.resultType && r[c.resultType]) types.add(r[c.resultType]);
+        const rv = parseNum(r[c.roas]);
+        if (rv > 0) { roas += rv; roasN++; }
+    });
+
+    return {
+        spend, reach, impressions: imp, clicks, results,
+        ctr:  imp > 0 ? (clicks/imp)*100 : 0,
+        cpm:  imp > 0 ? (spend/imp)*1000 : 0,
+        cpc:  clicks > 0 ? spend/clicks : 0,
+        cpr:  results > 0 ? spend/results : 0,
+        roas: roasN > 0 ? roas/roasN : 0,
+        resultType: [...types].join(', ') || 'Results',
+    };
+}
+
+function getDateRange(data) {
+    const h = Object.keys(data[0]||{});
+    const dc = findCol(h, COL.date);
+    if (!dc || !data.length) return '';
+    const dates = data.map(r => String(r[dc]||'').split(' ')[0]).filter(Boolean).sort();
+    if (!dates.length) return '';
+    const f = d => { const [y,m,day] = d.split('-'); return `${day}/${m}/${y}`; };
+    return dates[0] === dates[dates.length-1] ? f(dates[0]) : f(dates[0]) + ' – ' + f(dates[dates.length-1]);
+}
+
+function dailySeries(data) {
+    const h = Object.keys(data[0]||{});
+    const dc = findCol(h, COL.date);
+    const sc = findCol(h, COL.spend);
+    const rc = findCol(h, COL.results);
+    if (!dc) return { labels:[], spend:[], results:[] };
+    const map = {};
+    data.forEach(r => {
+        const d = String(r[dc]||'').split(' ')[0];
+        if (!d) return;
+        if (!map[d]) map[d] = { spend:0, results:0 };
+        map[d].spend   += parseNum(r[sc]);
+        map[d].results += parseNum(r[rc]);
+    });
+    const keys = Object.keys(map).sort();
+    return {
+        labels:  keys.map(d => { const [,m,day] = d.split('-'); return `${day}/${m}`; }),
+        spend:   keys.map(d => map[d].spend),
+        results: keys.map(d => map[d].results),
+    };
+}
+
+function campaignBreakdown(data) {
+    const h = Object.keys(data[0]||{});
+    const c = {};
+    for (const [k,v] of Object.entries(COL)) c[k] = findCol(h,v);
+    const map = {};
+    data.forEach(r => {
+        const cn = c.campaign && r[c.campaign] ? String(r[c.campaign]).trim() : 'Unknown Campaign';
+        const an = c.adset && r[c.adset] ? String(r[c.adset]).trim() : null;
+        if (!map[cn]) map[cn] = { spend:0,reach:0,imp:0,clicks:0,results:0,adsets:{} };
+        const cm = map[cn];
+        cm.spend   += parseNum(r[c.spend]);
+        cm.reach   += parseNum(r[c.reach]);
+        cm.imp     += parseNum(r[c.impressions]);
+        cm.clicks  += parseNum(r[c.clicks]);
+        cm.results += parseNum(r[c.results]);
+        if (an) {
+            if (!cm.adsets[an]) cm.adsets[an] = {spend:0,reach:0,imp:0,clicks:0,results:0};
+            const am = cm.adsets[an];
+            am.spend   += parseNum(r[c.spend]);
+            am.reach   += parseNum(r[c.reach]);
+            am.imp     += parseNum(r[c.impressions]);
+            am.clicks  += parseNum(r[c.clicks]);
+            am.results += parseNum(r[c.results]);
+        }
+    });
+    const calc = d => ({
+        ...d, impressions: d.imp,
+        ctr: d.imp>0?(d.clicks/d.imp)*100:0,
+        cpm: d.imp>0?(d.spend/d.imp)*1000:0,
+        cpc: d.clicks>0?d.spend/d.clicks:0,
+        cpr: d.results>0?d.spend/d.results:0,
+    });
+    return Object.entries(map).map(([name,d]) => ({
+        name, ...calc(d),
+        adsets: Object.entries(d.adsets).map(([an,ad]) => ({name:an,...calc(ad)})).sort((a,b)=>b.spend-a.spend)
+    })).sort((a,b) => b.spend-a.spend);
+}
+
+// ═══════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════
+function renderMetrics(data) {
+    const agg = aggregate(data);
+    if (!agg) return;
+    document.getElementById('m-spend').textContent       = fmt(agg.spend,'currency');
+    document.getElementById('m-reach').textContent       = fmt(agg.reach,'num');
+    document.getElementById('m-impressions').textContent = fmt(agg.impressions,'num');
+    document.getElementById('m-clicks').textContent      = fmt(agg.clicks,'num');
+    document.getElementById('m-ctr').textContent         = fmt(agg.ctr,'pct');
+    document.getElementById('m-cpm').textContent         = fmt(agg.cpm,'currency');
+    document.getElementById('m-cpc').textContent         = fmt(agg.cpc,'currency');
+    document.getElementById('m-results').textContent     = fmt(agg.results,'num');
+    document.getElementById('m-cpr').textContent         = fmt(agg.cpr,'currency');
+    document.getElementById('m-result-type').textContent = agg.resultType;
+    const roasCard = document.getElementById('roas-card');
+    if (agg.roas > 0) {
+        document.getElementById('m-roas').textContent = agg.roas.toFixed(2)+'x';
+        roasCard.style.opacity = '1';
+    } else {
+        document.getElementById('m-roas').textContent = 'N/A';
+        roasCard.style.opacity = '0.4';
+    }
+    document.getElementById('date-range-display').textContent = getDateRange(data);
+}
+
+function renderCharts(data) {
+    const series = dailySeries(data);
+    const base = {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: { backgroundColor:'#1e1e1e', borderColor:'#2a2a2a', borderWidth:1,
+                titleColor:'#9ca3af', bodyColor:'#f9fafb', padding:10 }
+        },
+        scales: {
+            x: { ticks:{ color:'#6b7280', font:{size:10} }, grid:{ color:'#1a1a1a' } },
+            y: { ticks:{ color:'#6b7280', font:{size:10} }, grid:{ color:'#1a1a1a' } }
+        }
+    };
+    if (spendChart) spendChart.destroy();
+    spendChart = new Chart(document.getElementById('spend-chart').getContext('2d'), {
+        type: 'bar',
+        data: { labels: series.labels, datasets: [{
+            data: series.spend,
+            backgroundColor: 'rgba(22,163,74,0.65)',
+            borderColor: '#16a34a', borderWidth:1, borderRadius:5,
+            hoverBackgroundColor: '#22c55e',
+        }]},
+        options: { ...base, plugins: { ...base.plugins,
+            tooltip: { ...base.plugins.tooltip,
+                callbacks: { label: ctx => ' '+CURRENCY+ctx.parsed.y.toFixed(2) }
+            }
+        }}
+    });
+    if (resultsChart) resultsChart.destroy();
+    resultsChart = new Chart(document.getElementById('results-chart').getContext('2d'), {
+        type: 'line',
+        data: { labels: series.labels, datasets: [{
+            data: series.results,
+            borderColor:'#22c55e', backgroundColor:'rgba(34,197,94,0.08)',
+            borderWidth:2.5, pointRadius:4, pointBackgroundColor:'#22c55e',
+            pointHoverRadius:6, fill:true, tension:0.35,
+        }]},
+        options: base
+    });
+}
+
+function renderTable(data) {
+    const camps = campaignBreakdown(data);
+    const tbody = document.getElementById('campaigns-tbody');
+    document.getElementById('campaign-count').textContent =
+        camps.length + (camps.length === 1 ? ' campaign' : ' campaigns');
+    if (!camps.length) {
+        tbody.innerHTML = '<tr><td colspan="10" class="no-data">No campaign data</td></tr>';
+        return;
+    }
+    tbody.innerHTML = camps.map((c,i) => {
+        const hasAdsets = c.adsets.length > 0;
+        const exp = hasAdsets
+            ? `<span class="expand-btn" id="exp-${i}">▶</span>`
+            : `<span class="expand-btn" style="opacity:0">▶</span>`;
+        const campRow = `
+            <tr onclick="${hasAdsets?`toggleAdsets(${i})`:''}" style="cursor:${hasAdsets?'pointer':'default'}">
+                <td><span class="td-name">${exp}${esc(c.name)}</span></td>
+                <td class="td-spend">${fmt(c.spend,'currency')}</td>
+                <td>${fmt(c.reach,'num')}</td>
+                <td>${fmt(c.impressions,'num')}</td>
+                <td>${fmt(c.clicks,'num')}</td>
+                <td>${fmt(c.ctr,'pct')}</td>
+                <td>${fmt(c.cpm,'currency')}</td>
+                <td>${fmt(c.cpc,'currency')}</td>
+                <td>${fmt(c.results,'num')}</td>
+                <td>${fmt(c.cpr,'currency')}</td>
+            </tr>`;
+        const adsetRows = c.adsets.map(a => `
+            <tr class="adset-row" data-camp="${i}">
+                <td><span class="td-adset">↳ ${esc(a.name)}</span></td>
+                <td class="td-spend">${fmt(a.spend,'currency')}</td>
+                <td>${fmt(a.reach,'num')}</td>
+                <td>${fmt(a.impressions,'num')}</td>
+                <td>${fmt(a.clicks,'num')}</td>
+                <td>${fmt(a.ctr,'pct')}</td>
+                <td>${fmt(a.cpm,'currency')}</td>
+                <td>${fmt(a.cpc,'currency')}</td>
+                <td>${fmt(a.results,'num')}</td>
+                <td>${fmt(a.cpr,'currency')}</td>
+            </tr>`).join('');
+        return campRow + adsetRows;
+    }).join('');
+}
+
+function toggleAdsets(i) {
+    const btn = document.getElementById(`exp-${i}`);
+    if (!btn) return;
+    const open = btn.classList.toggle('open');
+    document.querySelectorAll(`[data-camp="${i}"]`).forEach(r => r.classList.toggle('visible', open));
+}
+
+// ═══════════════════════════════════════
+//  EVENTS
+// ═══════════════════════════════════════
+document.querySelectorAll('.period-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        switchPeriod(parseInt(btn.dataset.days));
+    });
+});
+
+document.getElementById('csv-input').addEventListener('change', e => {
+    if (e.target.files[0]) handleFile(e.target.files[0]);
+});
+
+document.getElementById('update-csv-btn').addEventListener('click', () => {
+    storageDelete(selectedDays);
+    updatePeriodDots();
+    showUpload();
+});
+
+const uploadArea = document.getElementById('upload-area');
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+uploadArea.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+    handleFile(e.dataTransfer.files[0]);
+});
+uploadArea.addEventListener('click', e => {
+    if (e.target.tagName !== 'BUTTON') document.getElementById('csv-input').click();
+});
+
+// ═══════════════════════════════════════
+//  INIT — restore on page load
+// ═══════════════════════════════════════
+(function init() {
+    updatePeriodDots();
+    const saved = storageLoad(selectedDays);
+    if (saved) {
+        showDashboard(saved.data, saved.meta);
+    } else {
+        showUpload();
+    }
+})();
+</script>
+</body>
+</html>
