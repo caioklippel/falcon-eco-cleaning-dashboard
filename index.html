@@ -12,9 +12,9 @@
             --surface: #141414;
             --surface2: #1e1e1e;
             --border: #2a2a2a;
-            --green: #16a34a;
-            --green-light: #22c55e;
-            --green-dim: rgba(22, 163, 74, 0.12);
+            --green: #f55c0c;
+            --green-light: #f55c0c;
+            --green-dim: rgba(245, 92, 12, 0.12);
             --text: #f9fafb;
             --text-muted: #6b7280;
             --text-secondary: #9ca3af;
@@ -42,8 +42,8 @@
         .header-left { display: flex; align-items: center; gap: 14px; }
         .client-logo { height: 46px; width: auto; border-radius: 8px; background: #fff; padding: 4px; }
         .client-name { font-size: 17px; font-weight: 700; }
-        .client-subtitle { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-        .rise-badge { font-size: 12px; color: var(--green-light); font-weight: 600; text-align: right; }
+        .client-subtitle { font-size: 14px; color: var(--text-muted); margin-top: 3px; }
+        .rise-badge { font-size: 16px; color: var(--green-light); font-weight: 700; text-align: right; }
 
         /* ── CONTAINER ── */
         .container { max-width: 1440px; margin: 0 auto; padding: 24px; }
@@ -217,10 +217,10 @@
         <img src="logo.png" alt="Falcon Eco Cleaning" class="client-logo">
         <div>
             <div class="client-name">Falcon Eco Cleaning</div>
-            <div class="client-subtitle">Dashboard de Performance — Tráfego Pago</div>
+            <div class="client-subtitle">Dashboard de Performance — Meta Ads</div>
         </div>
     </div>
-    <div class="rise-badge">Rise Company Global</div>
+    <div class="rise-badge">Rise Company</div>
 </header>
 
 <div class="container">
@@ -261,6 +261,7 @@
             <div class="update-csv-wrap">
                 <button class="update-csv-btn" id="update-csv-btn">↑ Atualizar CSV</button>
                 <div class="last-update-small" id="last-update-small"></div>
+                <div class="last-update-small" id="rate-note" style="color: var(--green-light);"></div>
             </div>
         </div>
 
@@ -494,31 +495,75 @@ function updatePeriodDots() {
 }
 
 // ═══════════════════════════════════════
+//  CURRENCY CONVERSION
+// ═══════════════════════════════════════
+async function convertToGBP(data) {
+    if (!data.length) return { data, rateNote: '' };
+    const headers = Object.keys(data[0]);
+    const spendCol = findCol(headers, COL.spend);
+    if (!spendCol) return { data, rateNote: '' };
+
+    const colLower = spendCol.toLowerCase();
+    let fromCurrency = null;
+    if (colLower.includes('usd') || colLower.includes('$')) fromCurrency = 'USD';
+    else if (colLower.includes('brl') || colLower.includes('r$')) fromCurrency = 'BRL';
+    else if (colLower.includes('eur')) fromCurrency = 'EUR';
+
+    if (!fromCurrency) return { data, rateNote: '' };
+
+    let rate = 1;
+    let rateNote = '';
+    try {
+        const res = await fetch(`https://api.frankfurter.app/latest?from=${fromCurrency}&to=GBP`);
+        const json = await res.json();
+        rate = json.rates.GBP;
+        rateNote = `Convertido de ${fromCurrency} para £ · Taxa: 1 ${fromCurrency} = £${rate.toFixed(4)}`;
+    } catch {
+        const fallbacks = { USD: 0.79, BRL: 0.15, EUR: 0.86 };
+        rate = fallbacks[fromCurrency] || 1;
+        rateNote = `Convertido de ${fromCurrency} para £ · Taxa estimada: ${rate.toFixed(4)}`;
+    }
+
+    const converted = data.map(row => {
+        const newRow = { ...row };
+        const val = parseFloat(String(newRow[spendCol] || '').replace(/[,$R€\s]/g, '')) || 0;
+        newRow[spendCol] = (val * rate).toFixed(2);
+        return newRow;
+    });
+
+    return { data: converted, rateNote };
+}
+
+// ═══════════════════════════════════════
 //  CSV
 // ═══════════════════════════════════════
 function handleFile(file) {
     if (!file || !file.name.endsWith('.csv')) { showToast('Selecione um arquivo .csv'); return; }
+    showToast('Carregando...', 10000);
     Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
-        complete: (res) => {
-            const data = res.data.filter(row => {
+        complete: async (res) => {
+            let data = res.data.filter(row => {
                 const first = String(Object.values(row)[0]||'').toLowerCase().trim();
                 return first && !first.startsWith('total') && !first.startsWith('relatório') && !first.startsWith('report');
             });
             if (!data.length) { showToast('Nenhuma linha válida encontrada'); return; }
+
+            const { data: convertedData, rateNote } = await convertToGBP(data);
 
             const meta = {
                 updated: new Date().toLocaleString('pt-BR', {
                     timeZone: 'America/Sao_Paulo',
                     day: '2-digit', month: 'short',
                     hour: '2-digit', minute: '2-digit'
-                })
+                }),
+                rateNote
             };
 
-            storageSave(selectedDays, data, meta);
+            storageSave(selectedDays, convertedData, meta);
             updatePeriodDots();
-            showDashboard(data, meta);
+            showDashboard(convertedData, meta);
             showToast('✓ CSV carregado — ' + PERIOD_LABELS[selectedDays]);
         },
         error: () => showToast('Erro ao ler o arquivo')
@@ -533,6 +578,7 @@ function showDashboard(data, meta) {
     document.getElementById('dashboard').classList.add('visible');
     document.getElementById('period-label-display').textContent = PERIOD_LABELS[selectedDays];
     document.getElementById('last-update-small').textContent = 'Atualizado em ' + meta.updated;
+    document.getElementById('rate-note').textContent = meta.rateNote || '';
     renderMetrics(data);
     renderCharts(data);
     renderTable(data);
@@ -704,8 +750,8 @@ function renderCharts(data) {
         type: 'bar',
         data: { labels: series.labels, datasets: [{
             data: series.spend,
-            backgroundColor:'rgba(22,163,74,0.65)', borderColor:'#16a34a',
-            borderWidth:1, borderRadius:5, hoverBackgroundColor:'#22c55e',
+            backgroundColor:'rgba(245,92,12,0.65)', borderColor:'#f55c0c',
+            borderWidth:1, borderRadius:5, hoverBackgroundColor:'#f55c0c',
         }]},
         options: { ...base, plugins: { ...base.plugins,
             tooltip: { ...base.plugins.tooltip,
@@ -718,8 +764,8 @@ function renderCharts(data) {
         type: 'line',
         data: { labels: series.labels, datasets: [{
             data: series.results,
-            borderColor:'#22c55e', backgroundColor:'rgba(34,197,94,0.08)',
-            borderWidth:2.5, pointRadius:4, pointBackgroundColor:'#22c55e',
+            borderColor:'#f55c0c', backgroundColor:'rgba(245,92,12,0.08)',
+            borderWidth:2.5, pointRadius:4, pointBackgroundColor:'#f55c0c',
             pointHoverRadius:6, fill:true, tension:0.35,
         }]},
         options: base
