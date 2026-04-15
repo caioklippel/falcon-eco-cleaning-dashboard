@@ -42,7 +42,9 @@
         .client-logo { height: 46px; width: auto; border-radius: 8px; background: #fff; padding: 4px; }
         .client-name { font-size: 17px; font-weight: 700; }
         .client-subtitle { font-size: 14px; color: var(--text-muted); margin-top: 3px; }
-        .rise-badge { font-size: 16px; color: var(--green-light); font-weight: 700; text-align: right; }
+        .rise-badge { display: flex; align-items: center; gap: 10px; }
+        .rise-logo { height: 36px; width: 36px; border-radius: 50%; object-fit: cover; }
+        .rise-name { font-size: 16px; color: var(--green-light); font-weight: 700; }
 
         /* ── CONTAINER ── */
         .container { max-width: 1440px; margin: 0 auto; padding: 24px; }
@@ -77,13 +79,7 @@
             color: var(--green-light);
             font-weight: 600;
         }
-        .period-dot {
-            width: 6px; height: 6px;
-            border-radius: 50%;
-            background: var(--green-light);
-            display: none;
-        }
-        .period-btn.has-data .period-dot { display: block; }
+        .period-dot { display: none; }
 
         /* ── UPLOAD ── */
         .upload-wrap { margin-bottom: 24px; }
@@ -230,7 +226,10 @@
             <div class="client-subtitle">Dashboard de Performance — Meta Ads</div>
         </div>
     </div>
-    <div class="rise-badge">Rise Company</div>
+    <div class="rise-badge">
+        <img src="rise-logo.jpg" alt="Rise Company" class="rise-logo">
+        <span class="rise-name">Rise Company</span>
+    </div>
 </header>
 
 <div class="container">
@@ -386,7 +385,7 @@
 
 <footer class="footer">
     Desenvolvido por <a href="https://www.instagram.com/risecompanyglobal" target="_blank">@risecompanyglobal</a>
-    &nbsp;·&nbsp; Rise Company Global
+    &nbsp;·&nbsp; Rise Company
 </footer>
 
 <div class="toast" id="toast"></div>
