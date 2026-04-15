@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Falcon Eco Cleaning — Performance Dashboard</title>
+    <title>Falcon Eco Cleaning — Dashboard de Performance</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
@@ -43,9 +43,7 @@
         .client-logo { height: 46px; width: auto; border-radius: 8px; background: #fff; padding: 4px; }
         .client-name { font-size: 17px; font-weight: 700; }
         .client-subtitle { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-        .header-right { text-align: right; }
-        .rise-badge { font-size: 12px; color: var(--green-light); font-weight: 600; }
-        .last-update { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+        .rise-badge { font-size: 12px; color: var(--green-light); font-weight: 600; text-align: right; }
 
         /* ── CONTAINER ── */
         .container { max-width: 1440px; margin: 0 auto; padding: 24px; }
@@ -81,8 +79,7 @@
             font-weight: 600;
         }
         .period-dot {
-            width: 6px;
-            height: 6px;
+            width: 6px; height: 6px;
             border-radius: 50%;
             background: var(--green-light);
             display: none;
@@ -130,14 +127,15 @@
         /* ── DATA HEADER ── */
         .data-header {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
             margin-bottom: 20px;
             flex-wrap: wrap;
             gap: 10px;
         }
-        .data-info { font-size: 13px; color: var(--text-muted); }
+        .data-info { font-size: 13px; color: var(--text-muted); padding-top: 4px; }
         .data-info span { color: var(--green-light); font-weight: 600; }
+        .update-csv-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
         .update-csv-btn {
             padding: 8px 16px;
             background: var(--surface);
@@ -148,11 +146,9 @@
             cursor: pointer;
             transition: all 0.15s;
             font-family: inherit;
-            display: flex;
-            align-items: center;
-            gap: 6px;
         }
         .update-csv-btn:hover { border-color: var(--green); color: var(--green-light); }
+        .last-update-small { font-size: 11px; color: var(--text-muted); text-align: right; }
 
         /* ── METRICS ── */
         .metrics-grid {
@@ -221,149 +217,147 @@
         <img src="logo.png" alt="Falcon Eco Cleaning" class="client-logo">
         <div>
             <div class="client-name">Falcon Eco Cleaning</div>
-            <div class="client-subtitle">Paid Ads Performance Dashboard</div>
+            <div class="client-subtitle">Dashboard de Performance — Tráfego Pago</div>
         </div>
     </div>
-    <div class="header-right">
-        <div class="rise-badge">Rise Company Global</div>
-        <div class="last-update" id="last-update">No data loaded</div>
-    </div>
+    <div class="rise-badge">Rise Company Global</div>
 </header>
 
 <div class="container">
 
-    <!-- Period Filter -->
+    <!-- Filtro de Período -->
     <div class="period-bar">
-        <span class="period-label">Period:</span>
-        <button class="period-btn active" data-days="0"><span class="period-dot"></span>Today (UK)</button>
-        <button class="period-btn" data-days="3"><span class="period-dot"></span>Last 3 days</button>
-        <button class="period-btn" data-days="7"><span class="period-dot"></span>Last 7 days</button>
-        <button class="period-btn" data-days="15"><span class="period-dot"></span>Last 15 days</button>
-        <button class="period-btn" data-days="30"><span class="period-dot"></span>Last 30 days</button>
+        <span class="period-label">Período:</span>
+        <button class="period-btn active" data-days="0"><span class="period-dot"></span>Hoje</button>
+        <button class="period-btn" data-days="3"><span class="period-dot"></span>Últimos 3 dias</button>
+        <button class="period-btn" data-days="7"><span class="period-dot"></span>Últimos 7 dias</button>
+        <button class="period-btn" data-days="15"><span class="period-dot"></span>Últimos 15 dias</button>
+        <button class="period-btn" data-days="30"><span class="period-dot"></span>Últimos 30 dias</button>
     </div>
 
     <!-- Upload -->
     <div class="upload-wrap" id="upload-wrap">
         <div class="upload-area" id="upload-area">
             <div class="upload-icon">📊</div>
-            <div class="upload-title" id="upload-title">Upload CSV — Today (UK)</div>
+            <div class="upload-title" id="upload-title">Enviar CSV — Hoje</div>
             <div class="upload-desc">
-                Export from Meta Ads Manager for this period and upload here.<br>
-                <strong>Ads Manager → Reports → Export → CSV</strong>
+                Exporte os dados do Meta Ads Manager para este período e envie aqui.<br>
+                <strong>Ads Manager → Relatórios → Exportar → CSV</strong>
             </div>
-            <button class="upload-btn" onclick="document.getElementById('csv-input').click()">Choose CSV File</button>
+            <button class="upload-btn" onclick="document.getElementById('csv-input').click()">Escolher arquivo CSV</button>
             <input type="file" id="csv-input" accept=".csv" style="display:none">
-            <div class="upload-hint">Supports drag & drop · Each period has its own CSV</div>
+            <div class="upload-hint">Arraste e solte · Cada período tem seu próprio CSV</div>
         </div>
     </div>
 
     <!-- Dashboard -->
     <div class="dashboard" id="dashboard">
+
         <div class="data-header">
             <div class="data-info">
-                Period: <span id="period-label-display">—</span>
-                &nbsp;·&nbsp; <span id="rows-count">0</span> rows
+                <span id="period-label-display">—</span>
                 &nbsp;·&nbsp; <span id="date-range-display">—</span>
             </div>
-            <button class="update-csv-btn" id="update-csv-btn">
-                ↑ Update CSV
-            </button>
+            <div class="update-csv-wrap">
+                <button class="update-csv-btn" id="update-csv-btn">↑ Atualizar CSV</button>
+                <div class="last-update-small" id="last-update-small"></div>
+            </div>
         </div>
 
-        <!-- Metrics Row 1 -->
+        <!-- Métricas linha 1 -->
         <div class="metrics-grid" style="margin-bottom:12px;">
             <div class="metric-card">
-                <div class="metric-label">Total Spend</div>
+                <div class="metric-label">Investimento Total</div>
                 <div class="metric-value accent" id="m-spend">—</div>
-                <div class="metric-sub">Ad investment</div>
+                <div class="metric-sub">Valor investido em anúncios</div>
             </div>
             <div class="metric-card">
-                <div class="metric-label">Results</div>
+                <div class="metric-label">Resultados</div>
                 <div class="metric-value accent" id="m-results">—</div>
-                <div class="metric-sub" id="m-result-type">Leads / Messages</div>
+                <div class="metric-sub" id="m-result-type">Leads / Mensagens</div>
             </div>
             <div class="metric-card">
-                <div class="metric-label">Cost per Result</div>
+                <div class="metric-label">Custo por Resultado</div>
                 <div class="metric-value" id="m-cpr">—</div>
                 <div class="metric-sub">CPL / CPA</div>
             </div>
             <div class="metric-card">
-                <div class="metric-label">Reach</div>
+                <div class="metric-label">Alcance</div>
                 <div class="metric-value" id="m-reach">—</div>
-                <div class="metric-sub">Unique people</div>
+                <div class="metric-sub">Pessoas únicas</div>
             </div>
             <div class="metric-card">
-                <div class="metric-label">Impressions</div>
+                <div class="metric-label">Impressões</div>
                 <div class="metric-value" id="m-impressions">—</div>
-                <div class="metric-sub">Total views</div>
+                <div class="metric-sub">Total de visualizações</div>
             </div>
         </div>
 
-        <!-- Metrics Row 2 -->
+        <!-- Métricas linha 2 -->
         <div class="metrics-grid" style="margin-bottom:24px;">
             <div class="metric-card">
-                <div class="metric-label">Link Clicks</div>
+                <div class="metric-label">Cliques no Link</div>
                 <div class="metric-value" id="m-clicks">—</div>
-                <div class="metric-sub">Website clicks</div>
+                <div class="metric-sub">Cliques no site</div>
             </div>
             <div class="metric-card">
                 <div class="metric-label">CTR</div>
                 <div class="metric-value" id="m-ctr">—</div>
-                <div class="metric-sub">Click-through rate</div>
+                <div class="metric-sub">Taxa de cliques</div>
             </div>
             <div class="metric-card">
                 <div class="metric-label">CPM</div>
                 <div class="metric-value" id="m-cpm">—</div>
-                <div class="metric-sub">Cost / 1K impressions</div>
+                <div class="metric-sub">Custo por 1K impressões</div>
             </div>
             <div class="metric-card">
                 <div class="metric-label">CPC</div>
                 <div class="metric-value" id="m-cpc">—</div>
-                <div class="metric-sub">Cost per click</div>
+                <div class="metric-sub">Custo por clique</div>
             </div>
             <div class="metric-card" id="roas-card">
                 <div class="metric-label">ROAS</div>
                 <div class="metric-value" id="m-roas">—</div>
-                <div class="metric-sub">Return on ad spend</div>
+                <div class="metric-sub">Retorno sobre investimento</div>
             </div>
         </div>
 
-        <!-- Charts -->
+        <!-- Gráficos -->
         <div class="charts-grid">
             <div class="chart-card">
-                <div class="chart-title">Daily Spend (£)</div>
+                <div class="chart-title">Investimento Diário (£)</div>
                 <div class="chart-container"><canvas id="spend-chart"></canvas></div>
             </div>
             <div class="chart-card">
-                <div class="chart-title">Daily Results</div>
+                <div class="chart-title">Resultados Diários</div>
                 <div class="chart-container"><canvas id="results-chart"></canvas></div>
             </div>
         </div>
 
-        <!-- Table -->
+        <!-- Tabela -->
         <div class="table-section">
             <div class="table-header">
-                <div class="table-title">Campaigns & Ad Sets</div>
+                <div class="table-title">Campanhas e Conjuntos de Anúncios</div>
                 <div class="table-count" id="campaign-count">—</div>
             </div>
             <div style="overflow-x: auto;">
                 <table>
                     <thead>
                         <tr>
-                            <th>Campaign / Ad Set</th>
-                            <th>Spend</th>
-                            <th>Reach</th>
-                            <th>Impressions</th>
-                            <th>Clicks</th>
+                            <th>Campanha / Conjunto</th>
+                            <th>Investimento</th>
+                            <th>Alcance</th>
+                            <th>Impressões</th>
+                            <th>Cliques</th>
                             <th>CTR</th>
                             <th>CPM</th>
                             <th>CPC</th>
-                            <th>Results</th>
-                            <th>Cost / Result</th>
+                            <th>Resultados</th>
+                            <th>Custo / Resultado</th>
                         </tr>
                     </thead>
                     <tbody id="campaigns-tbody">
-                        <tr><td colspan="10" class="no-data">No data</td></tr>
+                        <tr><td colspan="10" class="no-data">Envie um CSV para ver os dados das campanhas</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -373,7 +367,7 @@
 </div>
 
 <footer class="footer">
-    Powered by <a href="https://www.instagram.com/risecompanyglobal" target="_blank">@risecompanyglobal</a>
+    Desenvolvido por <a href="https://www.instagram.com/risecompanyglobal" target="_blank">@risecompanyglobal</a>
     &nbsp;·&nbsp; Rise Company Global
 </footer>
 
@@ -385,13 +379,18 @@
 // ═══════════════════════════════════════
 const CURRENCY = '£';
 const STORAGE_KEY = 'falcon_eco_v1';
-const PERIOD_LABELS = { 0: 'Today (UK)', 3: 'Last 3 days', 7: 'Last 7 days', 15: 'Last 15 days', 30: 'Last 30 days' };
+const PERIOD_LABELS = {
+    0:  'Hoje',
+    3:  'Últimos 3 dias',
+    7:  'Últimos 7 dias',
+    15: 'Últimos 15 dias',
+    30: 'Últimos 30 dias'
+};
 
 let selectedDays = 0;
 let spendChart = null;
 let resultsChart = null;
 
-// ── Column mappings EN + PT ──
 const COL = {
     campaign:   ['campaign name','nome da campanha','campaign'],
     adset:      ['ad set name','nome do conjunto de anúncios','adset name','conjunto de anúncios'],
@@ -423,13 +422,12 @@ function storageSave(days, data, meta) {
         store[days] = { data, meta };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
     } catch(e) {
-        showToast('⚠ Storage full — data not saved across refreshes');
+        showToast('⚠ Armazenamento cheio — dados não persistirão ao atualizar a página');
     }
 }
 
 function storageLoad(days) {
-    const store = storageGet();
-    return store[days] || null;
+    return storageGet()[days] || null;
 }
 
 function storageDelete(days) {
@@ -438,9 +436,7 @@ function storageDelete(days) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
 }
 
-function hasData(days) {
-    return !!storageLoad(days);
-}
+function hasData(days) { return !!storageLoad(days); }
 
 // ═══════════════════════════════════════
 //  UTILS
@@ -474,7 +470,7 @@ function fmt(n, type) {
         if (n === 0) return '—';
         if (n >= 1000000) return (n/1000000).toFixed(1)+'M';
         if (n >= 1000) return (n/1000).toFixed(1)+'K';
-        return Math.round(n).toLocaleString('en-GB');
+        return Math.round(n).toLocaleString('pt-BR');
     }
     return String(n);
 }
@@ -493,16 +489,15 @@ function esc(s) {
 
 function updatePeriodDots() {
     document.querySelectorAll('.period-btn').forEach(btn => {
-        const d = parseInt(btn.dataset.days);
-        btn.classList.toggle('has-data', hasData(d));
+        btn.classList.toggle('has-data', hasData(parseInt(btn.dataset.days)));
     });
 }
 
 // ═══════════════════════════════════════
-//  CSV PARSING
+//  CSV
 // ═══════════════════════════════════════
 function handleFile(file) {
-    if (!file || !file.name.endsWith('.csv')) { showToast('Please select a .csv file'); return; }
+    if (!file || !file.name.endsWith('.csv')) { showToast('Selecione um arquivo .csv'); return; }
     Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
@@ -511,22 +506,22 @@ function handleFile(file) {
                 const first = String(Object.values(row)[0]||'').toLowerCase().trim();
                 return first && !first.startsWith('total') && !first.startsWith('relatório') && !first.startsWith('report');
             });
-            if (!data.length) { showToast('No valid rows in this CSV'); return; }
+            if (!data.length) { showToast('Nenhuma linha válida encontrada'); return; }
 
             const meta = {
-                rows: data.length,
-                updated: new Date().toLocaleString('en-GB', {
-                    timeZone: 'Europe/London',
-                    day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'
+                updated: new Date().toLocaleString('pt-BR', {
+                    timeZone: 'America/Sao_Paulo',
+                    day: '2-digit', month: 'short',
+                    hour: '2-digit', minute: '2-digit'
                 })
             };
 
             storageSave(selectedDays, data, meta);
             updatePeriodDots();
             showDashboard(data, meta);
-            showToast('✓ ' + data.length + ' rows loaded for ' + PERIOD_LABELS[selectedDays]);
+            showToast('✓ CSV carregado — ' + PERIOD_LABELS[selectedDays]);
         },
-        error: () => showToast('Error reading file')
+        error: () => showToast('Erro ao ler o arquivo')
     });
 }
 
@@ -536,9 +531,8 @@ function handleFile(file) {
 function showDashboard(data, meta) {
     document.getElementById('upload-wrap').style.display = 'none';
     document.getElementById('dashboard').classList.add('visible');
-    document.getElementById('rows-count').textContent = meta.rows;
-    document.getElementById('last-update').textContent = 'Updated ' + meta.updated;
     document.getElementById('period-label-display').textContent = PERIOD_LABELS[selectedDays];
+    document.getElementById('last-update-small').textContent = 'Atualizado em ' + meta.updated;
     renderMetrics(data);
     renderCharts(data);
     renderTable(data);
@@ -547,15 +541,12 @@ function showDashboard(data, meta) {
 function showUpload() {
     document.getElementById('upload-wrap').style.display = 'block';
     document.getElementById('dashboard').classList.remove('visible');
-    document.getElementById('upload-title').textContent = 'Upload CSV — ' + PERIOD_LABELS[selectedDays];
-    document.getElementById('last-update').textContent = 'No data for this period';
+    document.getElementById('upload-title').textContent = 'Enviar CSV — ' + PERIOD_LABELS[selectedDays];
     document.getElementById('csv-input').value = '';
 }
 
 function switchPeriod(days) {
     selectedDays = days;
-    document.getElementById('upload-title').textContent = 'Upload CSV — ' + PERIOD_LABELS[days];
-
     const saved = storageLoad(days);
     if (saved) {
         showDashboard(saved.data, saved.meta);
@@ -565,7 +556,7 @@ function switchPeriod(days) {
 }
 
 // ═══════════════════════════════════════
-//  DATA PROCESSING
+//  DATA
 // ═══════════════════════════════════════
 function aggregate(data) {
     if (!data.length) return null;
@@ -593,7 +584,7 @@ function aggregate(data) {
         cpc:  clicks > 0 ? spend/clicks : 0,
         cpr:  results > 0 ? spend/results : 0,
         roas: roasN > 0 ? roas/roasN : 0,
-        resultType: [...types].join(', ') || 'Results',
+        resultType: [...types].join(', ') || 'Leads / Mensagens',
     };
 }
 
@@ -635,7 +626,7 @@ function campaignBreakdown(data) {
     for (const [k,v] of Object.entries(COL)) c[k] = findCol(h,v);
     const map = {};
     data.forEach(r => {
-        const cn = c.campaign && r[c.campaign] ? String(r[c.campaign]).trim() : 'Unknown Campaign';
+        const cn = c.campaign && r[c.campaign] ? String(r[c.campaign]).trim() : 'Campanha Desconhecida';
         const an = c.adset && r[c.adset] ? String(r[c.adset]).trim() : null;
         if (!map[cn]) map[cn] = { spend:0,reach:0,imp:0,clicks:0,results:0,adsets:{} };
         const cm = map[cn];
@@ -663,8 +654,8 @@ function campaignBreakdown(data) {
     });
     return Object.entries(map).map(([name,d]) => ({
         name, ...calc(d),
-        adsets: Object.entries(d.adsets).map(([an,ad]) => ({name:an,...calc(ad)})).sort((a,b)=>b.spend-a.spend)
-    })).sort((a,b) => b.spend-a.spend);
+        adsets: Object.entries(d.adsets).map(([an,ad])=>({name:an,...calc(ad)})).sort((a,b)=>b.spend-a.spend)
+    })).sort((a,b)=>b.spend-a.spend);
 }
 
 // ═══════════════════════════════════════
@@ -683,6 +674,7 @@ function renderMetrics(data) {
     document.getElementById('m-results').textContent     = fmt(agg.results,'num');
     document.getElementById('m-cpr').textContent         = fmt(agg.cpr,'currency');
     document.getElementById('m-result-type').textContent = agg.resultType;
+    document.getElementById('date-range-display').textContent = getDateRange(data);
     const roasCard = document.getElementById('roas-card');
     if (agg.roas > 0) {
         document.getElementById('m-roas').textContent = agg.roas.toFixed(2)+'x';
@@ -691,7 +683,6 @@ function renderMetrics(data) {
         document.getElementById('m-roas').textContent = 'N/A';
         roasCard.style.opacity = '0.4';
     }
-    document.getElementById('date-range-display').textContent = getDateRange(data);
 }
 
 function renderCharts(data) {
@@ -704,8 +695,8 @@ function renderCharts(data) {
                 titleColor:'#9ca3af', bodyColor:'#f9fafb', padding:10 }
         },
         scales: {
-            x: { ticks:{ color:'#6b7280', font:{size:10} }, grid:{ color:'#1a1a1a' } },
-            y: { ticks:{ color:'#6b7280', font:{size:10} }, grid:{ color:'#1a1a1a' } }
+            x: { ticks:{color:'#6b7280',font:{size:10}}, grid:{color:'#1a1a1a'} },
+            y: { ticks:{color:'#6b7280',font:{size:10}}, grid:{color:'#1a1a1a'} }
         }
     };
     if (spendChart) spendChart.destroy();
@@ -713,9 +704,8 @@ function renderCharts(data) {
         type: 'bar',
         data: { labels: series.labels, datasets: [{
             data: series.spend,
-            backgroundColor: 'rgba(22,163,74,0.65)',
-            borderColor: '#16a34a', borderWidth:1, borderRadius:5,
-            hoverBackgroundColor: '#22c55e',
+            backgroundColor:'rgba(22,163,74,0.65)', borderColor:'#16a34a',
+            borderWidth:1, borderRadius:5, hoverBackgroundColor:'#22c55e',
         }]},
         options: { ...base, plugins: { ...base.plugins,
             tooltip: { ...base.plugins.tooltip,
@@ -740,9 +730,9 @@ function renderTable(data) {
     const camps = campaignBreakdown(data);
     const tbody = document.getElementById('campaigns-tbody');
     document.getElementById('campaign-count').textContent =
-        camps.length + (camps.length === 1 ? ' campaign' : ' campaigns');
+        camps.length + (camps.length === 1 ? ' campanha' : ' campanhas');
     if (!camps.length) {
-        tbody.innerHTML = '<tr><td colspan="10" class="no-data">No campaign data</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="no-data">Sem dados de campanha para este período</td></tr>';
         return;
     }
     tbody.innerHTML = camps.map((c,i) => {
@@ -750,7 +740,7 @@ function renderTable(data) {
         const exp = hasAdsets
             ? `<span class="expand-btn" id="exp-${i}">▶</span>`
             : `<span class="expand-btn" style="opacity:0">▶</span>`;
-        const campRow = `
+        return `
             <tr onclick="${hasAdsets?`toggleAdsets(${i})`:''}" style="cursor:${hasAdsets?'pointer':'default'}">
                 <td><span class="td-name">${exp}${esc(c.name)}</span></td>
                 <td class="td-spend">${fmt(c.spend,'currency')}</td>
@@ -762,8 +752,8 @@ function renderTable(data) {
                 <td>${fmt(c.cpc,'currency')}</td>
                 <td>${fmt(c.results,'num')}</td>
                 <td>${fmt(c.cpr,'currency')}</td>
-            </tr>`;
-        const adsetRows = c.adsets.map(a => `
+            </tr>
+            ${c.adsets.map(a => `
             <tr class="adset-row" data-camp="${i}">
                 <td><span class="td-adset">↳ ${esc(a.name)}</span></td>
                 <td class="td-spend">${fmt(a.spend,'currency')}</td>
@@ -775,8 +765,7 @@ function renderTable(data) {
                 <td>${fmt(a.cpc,'currency')}</td>
                 <td>${fmt(a.results,'num')}</td>
                 <td>${fmt(a.cpr,'currency')}</td>
-            </tr>`).join('');
-        return campRow + adsetRows;
+            </tr>`).join('')}`;
     }).join('');
 }
 
@@ -821,7 +810,7 @@ uploadArea.addEventListener('click', e => {
 });
 
 // ═══════════════════════════════════════
-//  INIT — restore on page load
+//  INIT
 // ═══════════════════════════════════════
 (function init() {
     updatePeriodDots();
