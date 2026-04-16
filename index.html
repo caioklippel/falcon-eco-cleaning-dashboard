@@ -162,10 +162,12 @@
 
     <div class="period-bar">
         <span class="period-label">Período:</span>
+        <button class="period-btn" data-days="-1"><span class="period-dot"></span>Este Mês</button>
         <button class="period-btn active" data-days="0"><span class="period-dot"></span>Ontem</button>
         <button class="period-btn" data-days="7"><span class="period-dot"></span>Últimos 7 dias</button>
         <button class="period-btn" data-days="14"><span class="period-dot"></span>Últimos 14 dias</button>
         <button class="period-btn" data-days="30"><span class="period-dot"></span>Últimos 30 dias</button>
+        <button class="period-btn" data-days="-2"><span class="period-dot"></span>Mês Passado</button>
         <div class="period-sep"></div>
         <button class="period-btn" id="btn-consideracoes" data-view="consideracoes">💬 Considerações do time</button>
     </div>
@@ -348,7 +350,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 //  CONFIG
 // ═══════════════════════════════════════
 const CURRENCY = '£';
-const PERIOD_LABELS = { 0:'Ontem', 7:'Últimos 7 dias', 14:'Últimos 14 dias', 30:'Últimos 30 dias' };
+const PERIOD_LABELS = { '-1':'Este Mês', 0:'Ontem', 7:'Últimos 7 dias', 14:'Últimos 14 dias', 30:'Últimos 30 dias', '-2':'Mês Passado' };
 let selectedDays = 0;
 
 const COL = {
