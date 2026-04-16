@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Falcon Eco Cleaning — Dashboard de Performance</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <style>
         :root {
             --bg: #0a0a0a;
@@ -19,25 +20,10 @@
             --text-secondary: #9ca3af;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background: var(--bg);
-            color: var(--text);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
-            min-height: 100vh;
-        }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif; min-height: 100vh; }
 
-        /* ── HEADER ── */
-        .header {
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
-            padding: 14px 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
+        /* HEADER */
+        .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
         .header-left { display: flex; align-items: center; gap: 14px; }
         .client-logo { height: 46px; width: auto; border-radius: 8px; background: #fff; padding: 4px; }
         .client-name { font-size: 17px; font-weight: 700; }
@@ -46,129 +32,77 @@
         .rise-logo { height: 36px; width: 36px; border-radius: 50%; object-fit: cover; }
         .rise-name { font-size: 17px; color: var(--green-light); font-weight: 700; }
 
-        /* ── CONTAINER ── */
+        /* CONTAINER */
         .container { max-width: 1440px; margin: 0 auto; padding: 24px; }
 
-        /* ── PERIOD BAR ── */
-        .period-bar {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-        }
+        /* PERIOD BAR */
+        .period-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
         .period-label { font-size: 12px; color: var(--text-muted); margin-right: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .period-btn {
-            padding: 7px 16px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            background: var(--surface);
-            color: var(--text-secondary);
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.15s;
-            font-family: inherit;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
+        .period-btn { padding: 7px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary); font-size: 13px; cursor: pointer; transition: all 0.15s; font-family: inherit; display: flex; align-items: center; gap: 6px; }
         .period-btn:hover { border-color: var(--green); color: var(--text); }
-        .period-btn.active {
-            background: var(--green-dim);
-            border-color: var(--green);
-            color: var(--green-light);
-            font-weight: 600;
-        }
+        .period-btn.active { background: var(--green-dim); border-color: var(--green); color: var(--green-light); font-weight: 600; }
         .period-dot { display: none; }
+        .period-sep { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
 
-        /* ── UPLOAD ── */
+        /* LOADING */
+        .loading-wrap { text-align: center; padding: 60px 20px; }
+        .loading-spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--green); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { font-size: 14px; color: var(--text-muted); }
+
+        /* UPLOAD */
         .upload-wrap { margin-bottom: 24px; }
-        .upload-area {
-            border: 2px dashed var(--border);
-            border-radius: 16px;
-            padding: 56px 32px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            background: var(--surface);
-        }
-        .upload-area:hover, .upload-area.dragover {
-            border-color: var(--green);
-            background: var(--green-dim);
-        }
+        .upload-area { border: 2px dashed var(--border); border-radius: 16px; padding: 56px 32px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--surface); }
+        .upload-area:hover, .upload-area.dragover { border-color: var(--green); background: var(--green-dim); }
         .upload-icon { font-size: 48px; margin-bottom: 16px; }
         .upload-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
         .upload-desc { font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px; }
         .upload-desc strong { color: var(--text-secondary); }
-        .upload-btn {
-            padding: 11px 28px;
-            background: var(--green);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.15s;
-            font-family: inherit;
-        }
-        .upload-btn:hover { background: var(--green-light); }
+        .upload-btn { padding: 11px 28px; background: var(--green); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s; font-family: inherit; }
+        .upload-btn:hover { opacity: 0.85; }
         .upload-hint { font-size: 12px; color: var(--text-muted); margin-top: 14px; }
 
-        /* ── DASHBOARD ── */
+        /* DASHBOARD */
         .dashboard { display: none; }
         .dashboard.visible { display: block; }
 
-        /* ── DATA HEADER ── */
-        .data-header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
+        /* DATA HEADER */
+        .data-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
         .data-info { font-size: 13px; color: var(--text-muted); padding-top: 4px; }
         .data-info span { color: var(--green-light); font-weight: 600; }
         .update-csv-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-        .update-csv-btn {
-            padding: 8px 16px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            color: var(--text-secondary);
-            border-radius: 8px;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.15s;
-            font-family: inherit;
-        }
+        .update-csv-btn { padding: 8px 16px; background: var(--surface); border: 1px solid var(--border); color: var(--text-secondary); border-radius: 8px; font-size: 13px; cursor: pointer; transition: all 0.15s; font-family: inherit; }
         .update-csv-btn:hover { border-color: var(--green); color: var(--green-light); }
         .last-update-small { font-size: 11px; color: var(--text-muted); text-align: right; }
 
-        /* ── METRICS ── */
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 12px;
-            margin-bottom: 14px;
-        }
-        .metric-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px 18px;
-            transition: border-color 0.15s;
-        }
+        /* SECTION TITLE */
+        .section-title { font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 14px; margin-top: 4px; }
+
+        /* METRICS */
+        .metrics-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 14px; }
+        .metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; transition: border-color 0.15s; }
         .metric-card:hover { border-color: var(--green); }
         .metric-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; font-weight: 600; }
         .metric-value { font-size: 22px; font-weight: 700; color: var(--text); line-height: 1; }
         .metric-value.accent { color: var(--green-light); }
         .metric-sub { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
 
-        /* ── SECTION TITLE ── */
-        .section-title { font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 14px; margin-top: 4px; }
+        /* TABLE */
+        .table-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
+        .table-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .table-title { font-size: 13px; font-weight: 700; }
+        .table-count { font-size: 12px; color: var(--text-muted); }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        thead th { padding: 9px 16px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); background: var(--surface2); border-bottom: 1px solid var(--border); white-space: nowrap; }
+        tbody tr { border-bottom: 1px solid var(--border); transition: background 0.12s; }
+        tbody tr:hover { background: var(--surface2); }
+        tbody tr:last-child { border-bottom: none; }
+        tbody td { padding: 11px 16px; color: var(--text-secondary); white-space: nowrap; }
+        .td-name { color: var(--text); font-weight: 500; max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+        .td-spend { color: var(--green-light); font-weight: 600; }
+        .no-data { text-align: center; padding: 40px; color: var(--text-muted); font-size: 13px; }
 
-        /* ── CONSIDERAÇÕES ── */
+        /* CONSIDERAÇÕES */
         .consideracoes-view { display: none; }
         .consideracoes-view.visible { display: block; }
         .cons-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
@@ -182,36 +116,26 @@
         .cons-save-wrap { display: flex; justify-content: flex-end; margin-bottom: 24px; }
         .consideracoes-save { padding: 9px 24px; background: var(--green); color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: opacity 0.15s; }
         .consideracoes-save:hover { opacity: 0.85; }
-        .period-sep { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
-        @media (max-width: 768px) { .consideracoes-grid { grid-template-columns: 1fr; } }
 
-        /* ── TABLE ── */
-        .table-section { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
-        .table-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-        .table-title { font-size: 13px; font-weight: 700; }
-        .table-count { font-size: 12px; color: var(--text-muted); }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        thead th { padding: 9px 16px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); background: var(--surface2); border-bottom: 1px solid var(--border); white-space: nowrap; }
-        tbody tr { border-bottom: 1px solid var(--border); transition: background 0.12s; }
-        tbody tr:hover { background: var(--surface2); }
-        tbody tr:last-child { border-bottom: none; }
-        tbody td { padding: 11px 16px; color: var(--text-secondary); white-space: nowrap; }
-        .td-name { color: var(--text); font-weight: 500; max-width: 240px; overflow: hidden; text-overflow: ellipsis; }
-        .td-adset { color: var(--text-secondary); font-size: 12px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
-        .td-spend { color: var(--green-light); font-weight: 600; }
-        .no-data { text-align: center; padding: 40px; color: var(--text-muted); font-size: 13px; }
-
-        /* ── FOOTER ── */
+        /* FOOTER */
         .footer { text-align: center; padding: 20px; font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border); }
         .footer a { color: var(--green-light); text-decoration: none; font-weight: 600; }
 
-        /* ── TOAST ── */
+        /* TOAST */
         .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface2); border: 1px solid var(--green); color: var(--text); padding: 12px 20px; border-radius: 10px; font-size: 13px; z-index: 9999; opacity: 0; transform: translateY(8px); transition: all 0.25s; pointer-events: none; }
         .toast.show { opacity: 1; transform: translateY(0); }
 
-        /* ── RESPONSIVE ── */
+        /* RESPONSIVE */
         @media (max-width: 1100px) { .metrics-grid { grid-template-columns: repeat(3, 1fr); } }
-        @media (max-width: 768px) { .container { padding: 16px; } .metrics-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 768px) {
+            .container { padding: 16px; }
+            .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+            .consideracoes-grid { grid-template-columns: 1fr; }
+            .rise-name { display: none; }
+            .period-bar { gap: 10px; }
+            .period-btn { font-size: 15px; padding: 10px 18px; }
+            .period-label { font-size: 14px; }
+        }
     </style>
 </head>
 <body>
@@ -232,7 +156,6 @@
 
 <div class="container">
 
-    <!-- Filtro de Período -->
     <div class="period-bar">
         <span class="period-label">Período:</span>
         <button class="period-btn active" data-days="0"><span class="period-dot"></span>Ontem</button>
@@ -243,28 +166,31 @@
         <button class="period-btn" id="btn-consideracoes" data-view="consideracoes">💬 Considerações do time</button>
     </div>
 
+    <!-- Loading -->
+    <div class="loading-wrap" id="loading-wrap">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Carregando dados...</div>
+    </div>
+
     <!-- Upload -->
-    <div class="upload-wrap" id="upload-wrap">
+    <div class="upload-wrap" id="upload-wrap" style="display:none">
         <div class="upload-area" id="upload-area">
             <div class="upload-icon">📊</div>
-            <div class="upload-title" id="upload-title">Enviar CSV — Hoje</div>
+            <div class="upload-title" id="upload-title">Enviar CSV — Ontem</div>
             <div class="upload-desc">
                 Exporte os dados do Meta Ads Manager para este período e envie aqui.<br>
                 <strong>Ads Manager → Relatórios → Exportar → CSV</strong>
             </div>
             <button class="upload-btn" onclick="document.getElementById('csv-input').click()">Escolher arquivo CSV</button>
             <input type="file" id="csv-input" accept=".csv" style="display:none">
-            <div class="upload-hint">Arraste e solte · Cada período tem seu próprio CSV</div>
+            <div class="upload-hint">Arraste e solte · Os dados ficam salvos na nuvem</div>
         </div>
     </div>
 
     <!-- Dashboard -->
     <div class="dashboard" id="dashboard">
-
         <div class="data-header">
-            <div class="data-info">
-                <span id="date-range-display">—</span>
-            </div>
+            <div class="data-info"><span id="date-range-display">—</span></div>
             <div class="update-csv-wrap">
                 <button class="update-csv-btn" id="update-csv-btn">↑ Atualizar CSV</button>
                 <div class="last-update-small" id="last-update-small"></div>
@@ -273,7 +199,6 @@
 
         <div class="section-title">Métricas Gerais das Campanhas</div>
 
-        <!-- Métricas linha 1 -->
         <div class="metrics-grid" style="margin-bottom:12px;">
             <div class="metric-card">
                 <div class="metric-label">Investimento Total</div>
@@ -302,7 +227,6 @@
             </div>
         </div>
 
-        <!-- Métricas linha 2 -->
         <div class="metrics-grid" style="margin-bottom:24px;">
             <div class="metric-card">
                 <div class="metric-label">Cliques no Link</div>
@@ -331,8 +255,6 @@
             </div>
         </div>
 
-
-        <!-- Tabela -->
         <div class="table-section">
             <div class="table-header">
                 <div class="table-title">Métricas por Campanha</div>
@@ -362,16 +284,12 @@
         </div>
     </div>
 
-    <!-- Considerações do Time -->
+    <!-- Considerações -->
     <div class="consideracoes-view" id="consideracoes-view">
-
-        <!-- Header: última atualização + botão atualizar (só aparece quando há notas salvas) -->
         <div class="cons-header" id="cons-header" style="display:none">
             <div class="last-update-small" id="cons-updated"></div>
             <button class="update-csv-btn" onclick="startEditConsideracoes()">↑ Atualizar Considerações</button>
         </div>
-
-        <!-- Modo exibição (notas salvas) -->
         <div class="consideracoes-grid" id="cons-display" style="display:none">
             <div class="consideracoes-card">
                 <div class="consideracoes-label">Considerações do time</div>
@@ -382,8 +300,6 @@
                 <div class="cons-text-display" id="cons-proximos-display"></div>
             </div>
         </div>
-
-        <!-- Modo edição (textareas) -->
         <div class="consideracoes-grid" id="cons-edit" style="display:none">
             <div class="consideracoes-card">
                 <div class="consideracoes-label">Considerações do time</div>
@@ -394,11 +310,9 @@
                 <textarea class="consideracoes-textarea" id="cons-proximos" placeholder="Liste as ações planejadas — ajustes de campanha, novos criativos, mudanças de estratégia..."></textarea>
             </div>
         </div>
-
         <div class="cons-save-wrap" id="cons-save-wrap" style="display:none">
             <button class="consideracoes-save" onclick="saveConsideracoes()">Salvar</button>
         </div>
-
     </div>
 
 </div>
@@ -412,24 +326,23 @@
 
 <script>
 // ═══════════════════════════════════════
+//  SUPABASE CONFIG
+// ═══════════════════════════════════════
+const SUPABASE_URL  = 'https://vrnafppqdomedlssmvtt.supabase.co';
+const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZybmFmcHBxZG9tZWRsc3NtdnR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyODkwOTUsImV4cCI6MjA5MTg2NTA5NX0.ZNXw-yJF6vymjRajKk7dKA9gbEKUH2-F7vgaFFLAri4';
+const TABLE         = 'dashboard_data';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ═══════════════════════════════════════
 //  CONFIG
 // ═══════════════════════════════════════
 const CURRENCY = '£';
-const STORAGE_KEY = 'falcon_eco_v1';
-const PERIOD_LABELS = {
-    0:  'Ontem',
-    7:  'Últimos 7 dias',
-    14: 'Últimos 14 dias',
-    30: 'Últimos 30 dias'
-};
-
+const PERIOD_LABELS = { 0:'Ontem', 7:'Últimos 7 dias', 14:'Últimos 14 dias', 30:'Últimos 30 dias' };
 let selectedDays = 0;
-let spendChart = null;
-let resultsChart = null;
 
 const COL = {
     campaign:   ['campaign name','nome da campanha','campaign'],
-    adset:      ['ad set name','nome do conjunto de anúncios','adset name','conjunto de anúncios'],
+    adset:      ['ad set name','nome do conjunto de anúncios','adset name'],
     date:       ['day','dia','date','reporting starts','início do relatório'],
     spend:      ['amount spent (gbp)','amount spent (usd)','amount spent (eur)','amount spent (brl)','amount spent','valor usado (gbp)','valor usado (brl)','valor usado'],
     reach:      ['reach','alcance'],
@@ -445,34 +358,24 @@ const COL = {
 };
 
 // ═══════════════════════════════════════
-//  STORAGE
+//  CLOUD STORAGE
 // ═══════════════════════════════════════
-function storageGet() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
-    catch { return {}; }
-}
-
-function storageSave(days, data, meta) {
+async function cloudLoad(key) {
     try {
-        const store = storageGet();
-        store[days] = { data, meta };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-    } catch(e) {
-        showToast('⚠ Armazenamento cheio — dados não persistirão ao atualizar a página');
-    }
+        const { data, error } = await sb.from(TABLE).select('value').eq('key', key).maybeSingle();
+        if (error || !data) return null;
+        return data.value;
+    } catch { return null; }
 }
 
-function storageLoad(days) {
-    return storageGet()[days] || null;
+async function cloudSave(key, value) {
+    const { error } = await sb.from(TABLE).upsert({ key, value }, { onConflict: 'key' });
+    if (error) throw error;
 }
 
-function storageDelete(days) {
-    const store = storageGet();
-    delete store[days];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+async function cloudDelete(key) {
+    await sb.from(TABLE).delete().eq('key', key);
 }
-
-function hasData(days) { return !!storageLoad(days); }
 
 // ═══════════════════════════════════════
 //  UTILS
@@ -497,10 +400,7 @@ function parseNum(val) {
 
 function fmt(n, type) {
     if (isNaN(n) || n === null) return '—';
-    if (type === 'currency') {
-        if (n === 0) return '—';
-        return CURRENCY + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
-    }
+    if (type === 'currency') { if (n === 0) return '—'; return CURRENCY + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
     if (type === 'pct') { if (n === 0) return '—'; return n.toFixed(2) + '%'; }
     if (type === 'num') {
         if (n === 0) return '—';
@@ -523,12 +423,6 @@ function esc(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function updatePeriodDots() {
-    document.querySelectorAll('.period-btn').forEach(btn => {
-        btn.classList.toggle('has-data', hasData(parseInt(btn.dataset.days)));
-    });
-}
-
 // ═══════════════════════════════════════
 //  CURRENCY CONVERSION
 // ═══════════════════════════════════════
@@ -537,40 +431,29 @@ async function convertToGBP(data) {
     const headers = Object.keys(data[0]);
     const spendCol = findCol(headers, COL.spend);
     if (!spendCol) return { data, rateNote: '' };
-
     const colLower = spendCol.toLowerCase();
     let fromCurrency = null;
-    if (colLower.includes('usd') || colLower.includes('$')) fromCurrency = 'USD';
-    else if (colLower.includes('brl') || colLower.includes('r$')) fromCurrency = 'BRL';
+    if (colLower.includes('usd')) fromCurrency = 'USD';
+    else if (colLower.includes('brl')) fromCurrency = 'BRL';
     else if (colLower.includes('eur')) fromCurrency = 'EUR';
-
     if (!fromCurrency) return { data, rateNote: '' };
-
-    let rate = 1;
-    let rateNote = '';
+    let rate = { USD: 0.79, BRL: 0.15, EUR: 0.86 }[fromCurrency] || 1;
     try {
         const res = await fetch(`https://api.frankfurter.app/latest?from=${fromCurrency}&to=GBP`);
         const json = await res.json();
         rate = json.rates.GBP;
-        rateNote = `Convertido de ${fromCurrency} para £ · Taxa: 1 ${fromCurrency} = £${rate.toFixed(4)}`;
-    } catch {
-        const fallbacks = { USD: 0.79, BRL: 0.15, EUR: 0.86 };
-        rate = fallbacks[fromCurrency] || 1;
-        rateNote = `Convertido de ${fromCurrency} para £ · Taxa estimada: ${rate.toFixed(4)}`;
-    }
-
+    } catch {}
     const converted = data.map(row => {
         const newRow = { ...row };
-        const val = parseFloat(String(newRow[spendCol] || '').replace(/[,$R€\s]/g, '')) || 0;
+        const val = parseFloat(String(newRow[spendCol] || '').replace(/[,$R€\s]/g,'')) || 0;
         newRow[spendCol] = (val * rate).toFixed(2);
         return newRow;
     });
-
-    return { data: converted, rateNote };
+    return { data: converted };
 }
 
 // ═══════════════════════════════════════
-//  CSV
+//  CSV PARSING
 // ═══════════════════════════════════════
 function handleFile(file) {
     if (!file || !file.name.endsWith('.csv')) { showToast('Selecione um arquivo .csv'); return; }
@@ -584,22 +467,17 @@ function handleFile(file) {
                 return first && !first.startsWith('total') && !first.startsWith('relatório') && !first.startsWith('report');
             });
             if (!data.length) { showToast('Nenhuma linha válida encontrada'); return; }
-
-            const { data: convertedData, rateNote } = await convertToGBP(data);
-
+            const { data: convertedData } = await convertToGBP(data);
             const meta = {
-                updated: new Date().toLocaleString('pt-BR', {
-                    timeZone: 'America/Sao_Paulo',
-                    day: '2-digit', month: 'short',
-                    hour: '2-digit', minute: '2-digit'
-                }),
-                rateNote
+                updated: new Date().toLocaleString('pt-BR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })
             };
-
-            storageSave(selectedDays, convertedData, meta);
-            updatePeriodDots();
-            showDashboard(convertedData, meta);
-            showToast('✓ CSV carregado — ' + PERIOD_LABELS[selectedDays]);
+            try {
+                await cloudSave(`period_${selectedDays}`, { data: convertedData, meta });
+                showDashboard(convertedData, meta);
+                showToast('✓ CSV salvo na nuvem — ' + PERIOD_LABELS[selectedDays]);
+            } catch(e) {
+                showToast('Erro ao salvar na nuvem: ' + e.message);
+            }
         },
         error: () => showToast('Erro ao ler o arquivo')
     });
@@ -608,24 +486,36 @@ function handleFile(file) {
 // ═══════════════════════════════════════
 //  SHOW / HIDE
 // ═══════════════════════════════════════
+function showLoading() {
+    document.getElementById('loading-wrap').style.display = 'block';
+    document.getElementById('upload-wrap').style.display  = 'none';
+    document.getElementById('dashboard').classList.remove('visible');
+    document.getElementById('consideracoes-view').classList.remove('visible');
+}
+
 function showDashboard(data, meta) {
-    document.getElementById('upload-wrap').style.display = 'none';
+    document.getElementById('loading-wrap').style.display = 'none';
+    document.getElementById('upload-wrap').style.display  = 'none';
     document.getElementById('dashboard').classList.add('visible');
+    document.getElementById('consideracoes-view').classList.remove('visible');
     document.getElementById('last-update-small').textContent = 'Atualizado em ' + meta.updated;
     renderMetrics(data);
     renderTable(data);
 }
 
 function showUpload() {
-    document.getElementById('upload-wrap').style.display = 'block';
+    document.getElementById('loading-wrap').style.display = 'none';
+    document.getElementById('upload-wrap').style.display  = 'block';
     document.getElementById('dashboard').classList.remove('visible');
+    document.getElementById('consideracoes-view').classList.remove('visible');
     document.getElementById('upload-title').textContent = 'Enviar CSV — ' + PERIOD_LABELS[selectedDays];
     document.getElementById('csv-input').value = '';
 }
 
-function switchPeriod(days) {
+async function switchPeriod(days) {
     selectedDays = days;
-    const saved = storageLoad(days);
+    showLoading();
+    const saved = await cloudLoad(`period_${days}`);
     if (saved) {
         showDashboard(saved.data, saved.meta);
     } else {
@@ -634,14 +524,13 @@ function switchPeriod(days) {
 }
 
 // ═══════════════════════════════════════
-//  DATA
+//  DATA PROCESSING
 // ═══════════════════════════════════════
 function aggregate(data) {
     if (!data.length) return null;
     const h = Object.keys(data[0]);
     const c = {};
     for (const [k,v] of Object.entries(COL)) c[k] = findCol(h,v);
-
     let spend=0,reach=0,imp=0,clicks=0,results=0,roas=0,roasN=0;
     const types = new Set();
     data.forEach(r => {
@@ -654,7 +543,6 @@ function aggregate(data) {
         const rv = parseNum(r[c.roas]);
         if (rv > 0) { roas += rv; roasN++; }
     });
-
     return {
         spend, reach, impressions: imp, clicks, results,
         ctr:  imp > 0 ? (clicks/imp)*100 : 0,
@@ -676,28 +564,6 @@ function getDateRange(data) {
     return dates[0] === dates[dates.length-1] ? f(dates[0]) : f(dates[0]) + ' – ' + f(dates[dates.length-1]);
 }
 
-function dailySeries(data) {
-    const h = Object.keys(data[0]||{});
-    const dc = findCol(h, COL.date);
-    const sc = findCol(h, COL.spend);
-    const rc = findCol(h, COL.results);
-    if (!dc) return { labels:[], spend:[], results:[] };
-    const map = {};
-    data.forEach(r => {
-        const d = String(r[dc]||'').split(' ')[0];
-        if (!d) return;
-        if (!map[d]) map[d] = { spend:0, results:0 };
-        map[d].spend   += parseNum(r[sc]);
-        map[d].results += parseNum(r[rc]);
-    });
-    const keys = Object.keys(map).sort();
-    return {
-        labels:  keys.map(d => { const [,m,day] = d.split('-'); return `${day}/${m}`; }),
-        spend:   keys.map(d => map[d].spend),
-        results: keys.map(d => map[d].results),
-    };
-}
-
 function campaignBreakdown(data) {
     const h = Object.keys(data[0]||{});
     const c = {};
@@ -705,34 +571,22 @@ function campaignBreakdown(data) {
     const map = {};
     data.forEach(r => {
         const cn = c.campaign && r[c.campaign] ? String(r[c.campaign]).trim() : 'Campanha Desconhecida';
-        const an = c.adset && r[c.adset] ? String(r[c.adset]).trim() : null;
-        if (!map[cn]) map[cn] = { spend:0,reach:0,imp:0,clicks:0,results:0,adsets:{} };
+        if (!map[cn]) map[cn] = { spend:0,reach:0,imp:0,clicks:0,results:0 };
         const cm = map[cn];
         cm.spend   += parseNum(r[c.spend]);
         cm.reach   += parseNum(r[c.reach]);
         cm.imp     += parseNum(r[c.impressions]);
         cm.clicks  += parseNum(r[c.clicks]);
         cm.results += parseNum(r[c.results]);
-        if (an) {
-            if (!cm.adsets[an]) cm.adsets[an] = {spend:0,reach:0,imp:0,clicks:0,results:0};
-            const am = cm.adsets[an];
-            am.spend   += parseNum(r[c.spend]);
-            am.reach   += parseNum(r[c.reach]);
-            am.imp     += parseNum(r[c.impressions]);
-            am.clicks  += parseNum(r[c.clicks]);
-            am.results += parseNum(r[c.results]);
-        }
     });
-    const calc = d => ({
-        ...d, impressions: d.imp,
+    return Object.entries(map).map(([name,d]) => ({
+        name,
+        spend: d.spend, reach: d.reach, impressions: d.imp,
+        clicks: d.clicks, results: d.results,
         ctr: d.imp>0?(d.clicks/d.imp)*100:0,
         cpm: d.imp>0?(d.spend/d.imp)*1000:0,
         cpc: d.clicks>0?d.spend/d.clicks:0,
         cpr: d.results>0?d.spend/d.results:0,
-    });
-    return Object.entries(map).map(([name,d]) => ({
-        name, ...calc(d),
-        adsets: Object.entries(d.adsets).map(([an,ad])=>({name:an,...calc(ad)})).sort((a,b)=>b.spend-a.spend)
     })).sort((a,b)=>b.spend-a.spend);
 }
 
@@ -754,25 +608,15 @@ function renderMetrics(data) {
     document.getElementById('m-result-type').textContent = agg.resultType;
     document.getElementById('date-range-display').textContent = getDateRange(data);
     const roasCard = document.getElementById('roas-card');
-    if (agg.roas > 0) {
-        document.getElementById('m-roas').textContent = agg.roas.toFixed(2)+'x';
-        roasCard.style.opacity = '1';
-    } else {
-        document.getElementById('m-roas').textContent = 'N/A';
-        roasCard.style.opacity = '0.4';
-    }
+    if (agg.roas > 0) { document.getElementById('m-roas').textContent = agg.roas.toFixed(2)+'x'; roasCard.style.opacity='1'; }
+    else { document.getElementById('m-roas').textContent = 'N/A'; roasCard.style.opacity='0.4'; }
 }
-
 
 function renderTable(data) {
     const camps = campaignBreakdown(data);
     const tbody = document.getElementById('campaigns-tbody');
-    document.getElementById('campaign-count').textContent =
-        camps.length + (camps.length === 1 ? ' campanha' : ' campanhas');
-    if (!camps.length) {
-        tbody.innerHTML = '<tr><td colspan="10" class="no-data">Sem dados de campanha para este período</td></tr>';
-        return;
-    }
+    document.getElementById('campaign-count').textContent = camps.length + (camps.length===1?' campanha':' campanhas');
+    if (!camps.length) { tbody.innerHTML='<tr><td colspan="10" class="no-data">Sem dados de campanha</td></tr>'; return; }
     tbody.innerHTML = camps.map(c => `
         <tr>
             <td><span class="td-name">${esc(c.name)}</span></td>
@@ -788,39 +632,30 @@ function renderTable(data) {
         </tr>`).join('');
 }
 
-
 // ═══════════════════════════════════════
 //  CONSIDERAÇÕES
 // ═══════════════════════════════════════
-const NOTES_KEY = 'falcon_eco_notes_v1';
-
-function notesLoad() {
-    try { return JSON.parse(localStorage.getItem(NOTES_KEY) || 'null'); }
-    catch { return null; }
+async function showConsideracoes() {
+    document.getElementById('loading-wrap').style.display = 'none';
+    document.getElementById('upload-wrap').style.display  = 'none';
+    document.getElementById('dashboard').classList.remove('visible');
+    document.getElementById('consideracoes-view').classList.add('visible');
+    document.getElementById('cons-header').style.display    = 'none';
+    document.getElementById('cons-display').style.display   = 'none';
+    document.getElementById('cons-edit').style.display      = 'none';
+    document.getElementById('cons-save-wrap').style.display = 'none';
+    showToast('Carregando considerações...', 5000);
+    const notes = await cloudLoad('notes');
+    renderConsideracoesState(notes);
 }
 
-function notesSave(texto, proximos) {
-    const notes = {
-        texto, proximos,
-        updated: new Date().toLocaleString('pt-BR', {
-            day: '2-digit', month: 'short',
-            hour: '2-digit', minute: '2-digit'
-        })
-    };
-    localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
-    return notes;
-}
-
-function renderConsideracoes() {
-    const notes = notesLoad();
-    const hasnotes = notes && (notes.texto || notes.proximos);
-
-    document.getElementById('cons-header').style.display   = hasnotes ? 'flex' : 'none';
-    document.getElementById('cons-display').style.display  = hasnotes ? 'grid' : 'none';
-    document.getElementById('cons-edit').style.display     = hasnotes ? 'none' : 'grid';
-    document.getElementById('cons-save-wrap').style.display = hasnotes ? 'none' : 'flex';
-
-    if (hasnotes) {
+function renderConsideracoesState(notes) {
+    const has = notes && (notes.texto || notes.proximos);
+    document.getElementById('cons-header').style.display    = has ? 'flex' : 'none';
+    document.getElementById('cons-display').style.display   = has ? 'grid' : 'none';
+    document.getElementById('cons-edit').style.display      = has ? 'none' : 'grid';
+    document.getElementById('cons-save-wrap').style.display = has ? 'none' : 'flex';
+    if (has) {
         document.getElementById('cons-updated').textContent        = 'Atualizado em ' + notes.updated;
         document.getElementById('cons-texto-display').textContent  = notes.texto || '';
         document.getElementById('cons-proximos-display').textContent = notes.proximos || '';
@@ -828,36 +663,29 @@ function renderConsideracoes() {
         document.getElementById('cons-texto').value    = '';
         document.getElementById('cons-proximos').value = '';
     }
+    showToast('');
 }
 
 function startEditConsideracoes() {
-    const notes = notesLoad();
-    document.getElementById('cons-texto').value    = notes?.texto    || '';
-    document.getElementById('cons-proximos').value = notes?.proximos || '';
     document.getElementById('cons-display').style.display   = 'none';
     document.getElementById('cons-header').style.display    = 'none';
     document.getElementById('cons-edit').style.display      = 'grid';
     document.getElementById('cons-save-wrap').style.display = 'flex';
 }
 
-function saveConsideracoes() {
-    notesSave(
-        document.getElementById('cons-texto').value,
-        document.getElementById('cons-proximos').value
-    );
-    renderConsideracoes();
-    showToast('✓ Considerações salvas');
-}
-
-function showConsideracoes() {
-    document.getElementById('upload-wrap').style.display = 'none';
-    document.getElementById('dashboard').classList.remove('visible');
-    document.getElementById('consideracoes-view').classList.add('visible');
-    renderConsideracoes();
-}
-
-function hideConsideracoes() {
-    document.getElementById('consideracoes-view').classList.remove('visible');
+async function saveConsideracoes() {
+    const notes = {
+        texto:    document.getElementById('cons-texto').value,
+        proximos: document.getElementById('cons-proximos').value,
+        updated:  new Date().toLocaleString('pt-BR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })
+    };
+    try {
+        await cloudSave('notes', notes);
+        renderConsideracoesState(notes);
+        showToast('✓ Considerações salvas na nuvem');
+    } catch(e) {
+        showToast('Erro ao salvar: ' + e.message);
+    }
 }
 
 // ═══════════════════════════════════════
@@ -867,7 +695,6 @@ document.querySelectorAll('.period-btn[data-days]').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        hideConsideracoes();
         switchPeriod(parseInt(btn.dataset.days));
     });
 });
@@ -882,30 +709,23 @@ document.getElementById('csv-input').addEventListener('change', e => {
     if (e.target.files[0]) handleFile(e.target.files[0]);
 });
 
-document.getElementById('update-csv-btn').addEventListener('click', () => {
-    storageDelete(selectedDays);
-    updatePeriodDots();
+document.getElementById('update-csv-btn').addEventListener('click', async () => {
+    await cloudDelete(`period_${selectedDays}`);
     showUpload();
 });
 
 const uploadArea = document.getElementById('upload-area');
 uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
 uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
-uploadArea.addEventListener('drop', e => {
-    e.preventDefault();
-    uploadArea.classList.remove('dragover');
-    handleFile(e.dataTransfer.files[0]);
-});
-uploadArea.addEventListener('click', e => {
-    if (e.target.tagName !== 'BUTTON') document.getElementById('csv-input').click();
-});
+uploadArea.addEventListener('drop', e => { e.preventDefault(); uploadArea.classList.remove('dragover'); handleFile(e.dataTransfer.files[0]); });
+uploadArea.addEventListener('click', e => { if (e.target.tagName !== 'BUTTON') document.getElementById('csv-input').click(); });
 
 // ═══════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════
-(function init() {
-    updatePeriodDots();
-    const saved = storageLoad(selectedDays);
+(async function init() {
+    showLoading();
+    const saved = await cloudLoad(`period_${selectedDays}`);
     if (saved) {
         showDashboard(saved.data, saved.meta);
     } else {
