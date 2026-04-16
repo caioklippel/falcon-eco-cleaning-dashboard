@@ -137,6 +137,8 @@
             .period-btn { font-size: 15px; padding: 10px 18px; }
             .period-label { font-size: 14px; }
             #btn-consideracoes { margin-top: 8px; }
+            .metrics-wrap { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px; }
+            .metrics-wrap .metrics-grid { display: contents; }
         }
     </style>
 </head>
@@ -201,6 +203,7 @@
         <div class="section-title">Métricas Gerais das Campanhas</div>
         <div class="section-update" id="last-update-small"></div>
 
+        <div class="metrics-wrap">
         <div class="metrics-grid" style="margin-bottom:12px;">
             <div class="metric-card">
                 <div class="metric-label">Investimento Total</div>
@@ -229,7 +232,7 @@
             </div>
         </div>
 
-        <div class="metrics-grid" style="margin-bottom:24px;">
+        <div class="metrics-grid" style="margin-bottom:0;">
             <div class="metric-card">
                 <div class="metric-label">Cliques no Link</div>
                 <div class="metric-value" id="m-clicks">—</div>
@@ -256,6 +259,7 @@
                 <div class="metric-sub">Retorno sobre investimento</div>
             </div>
         </div>
+        </div><!-- /metrics-wrap -->
 
         <div class="table-section">
             <div class="table-header">
@@ -288,16 +292,18 @@
 
     <!-- Considerações -->
     <div class="consideracoes-view" id="consideracoes-view">
-        <div class="cons-header" id="cons-header" style="display:none">
-            <div></div>
-            <div class="update-csv-wrap">
+        <div class="data-header">
+            <div>
+                <div class="section-title" style="margin-bottom:0;">CONSIDERAÇÕES</div>
+                <div class="section-update" id="cons-updated"></div>
+            </div>
+            <div id="cons-header" style="display:none;">
                 <button class="update-csv-btn" onclick="startEditConsideracoes()">↑ Atualizar Considerações</button>
-                <div class="last-update-small" id="cons-updated"></div>
             </div>
         </div>
         <div class="consideracoes-grid" id="cons-display" style="display:none">
             <div class="consideracoes-card">
-                <div class="consideracoes-label">Considerações</div>
+                <div class="consideracoes-label">Resultado</div>
                 <div class="cons-text-display" id="cons-texto-display"></div>
             </div>
             <div class="consideracoes-card">
@@ -307,7 +313,7 @@
         </div>
         <div class="consideracoes-grid" id="cons-edit" style="display:none">
             <div class="consideracoes-card">
-                <div class="consideracoes-label">Considerações</div>
+                <div class="consideracoes-label">Resultado</div>
                 <textarea class="consideracoes-textarea" id="cons-texto" placeholder="Descreva as observações sobre as métricas — o que está funcionando, o que precisa de atenção, pontos de destaque..."></textarea>
             </div>
             <div class="consideracoes-card">
@@ -656,12 +662,12 @@ async function showConsideracoes() {
 
 function renderConsideracoesState(notes) {
     const has = notes && (notes.texto || notes.proximos);
-    document.getElementById('cons-header').style.display    = has ? 'flex' : 'none';
+    document.getElementById('cons-header').style.display    = has ? 'block' : 'none';
     document.getElementById('cons-display').style.display   = has ? 'grid' : 'none';
     document.getElementById('cons-edit').style.display      = has ? 'none' : 'grid';
     document.getElementById('cons-save-wrap').style.display = has ? 'none' : 'flex';
+    document.getElementById('cons-updated').textContent     = has ? ('Atualizado em ' + notes.updated) : '';
     if (has) {
-        document.getElementById('cons-updated').textContent        = 'Atualizado em ' + notes.updated;
         document.getElementById('cons-texto-display').textContent  = notes.texto || '';
         document.getElementById('cons-proximos-display').textContent = notes.proximos || '';
     } else {
