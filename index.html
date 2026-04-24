@@ -478,7 +478,7 @@ function handleFile(file) {
             if (!data.length) { showToast('Nenhuma linha válida encontrada'); return; }
             const { data: convertedData } = await convertToGBP(data);
             const meta = {
-                updated: new Date().toLocaleString('pt-BR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })
+                updated: new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'short' })
             };
             try {
                 await cloudSave(`period_${selectedDays}`, { data: convertedData, meta });
@@ -686,7 +686,7 @@ async function saveConsideracoes() {
     const notes = {
         texto:    document.getElementById('cons-texto').value,
         proximos: document.getElementById('cons-proximos').value,
-        updated:  new Date().toLocaleString('pt-BR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })
+        updated:  new Date().toLocaleDateString('pt-BR', { day:'2-digit', month:'short' })
     };
     try {
         await cloudSave('notes', notes);
