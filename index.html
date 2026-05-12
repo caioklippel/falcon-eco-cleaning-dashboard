@@ -580,7 +580,7 @@ function campaignBreakdown(data) {
     for (const [k,v] of Object.entries(COL)) c[k] = findCol(h,v);
     const map = {};
     data.forEach(r => {
-        const cn = c.campaign && r[c.campaign] ? String(r[c.campaign]).trim() : 'Campanha Desconhecida';
+        const cn = c.campaign && r[c.campaign] ? String(r[c.campaign]).trim() : 'Campanha';
         if (!map[cn]) map[cn] = { spend:0,reach:0,imp:0,clicks:0,results:0 };
         const cm = map[cn];
         cm.spend   += parseNum(r[c.spend]);
